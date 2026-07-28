@@ -12,6 +12,9 @@ services:
     runtime: node
     rootDir: backend
     plan: free
+    # `sequelize-cli` está en `dependencies`, no en `devDependencies`: con
+    # NODE_ENV=production npm omite las de desarrollo, y esta migración fallaría
+    # con "sequelize-cli: not found" antes de crear una sola tabla.
     buildCommand: npm install && npm run db:migrate
     startCommand: npm start
     # El endpoint es público y no toca la base: sirve para que Render sepa que
