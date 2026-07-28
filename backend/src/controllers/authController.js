@@ -1,7 +1,7 @@
 const authService = require('../services/authService');
 const audit = require('../services/auditService');
 const asyncHandler = require('../utils/asyncHandler');
-const { ROLE_LABELS } = require('../config/roles');
+const { ROLES, describeRole } = require('../config/roles');
 
 const login = asyncHandler(async (req, res) => {
   const session = await authService.login(req.body);
@@ -40,11 +40,17 @@ const logout = asyncHandler(async (_req, res) => {
   res.json({ success: true, data: { message: 'Sesión cerrada' } });
 });
 
-/** Catálogo de roles, para poblar los selectores del cliente. */
+/**
+ * Catálogo de roles con sus permisos ya descritos.
+ *
+ * El cliente muestra esta lista tal cual: si describiera los permisos por su
+ * cuenta, la descripción se desincronizaría del comportamiento real en cuanto
+ * cambiara la matriz.
+ */
 const roles = asyncHandler(async (_req, res) => {
   res.json({
     success: true,
-    data: Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label })),
+    data: Object.values(ROLES).map(describeRole),
   });
 });
 

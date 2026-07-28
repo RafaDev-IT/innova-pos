@@ -51,8 +51,16 @@
               dense
               class="mb-1 pos-role-select"
               :error-messages="serverErrors.role"
-              @change="clearServerError('role')"
-            />
+              @change="onRoleChange"
+            >
+              <!-- Acceso permanente a la ficha: el diálogo salta al cambiar de
+                   rol, pero también debe poder consultarse sin cambiar nada. -->
+              <template #append-outer>
+                <v-btn icon x-small title="Ver qué puede hacer este rol" @click="mostrarPermisos()">
+                  <v-icon size="18">mdi-information-outline</v-icon>
+                </v-btn>
+              </template>
+            </v-select>
           </div>
 
           <v-text-field
@@ -113,11 +121,15 @@
         </v-btn>
       </div>
     </div>
+
+    <RolePermissionsDialog v-model="permisosAbiertos" :rol="rolMostrado" :todos="roles" />
   </v-dialog>
 </template>
 
 <script>
 import userService from '@/services/userService';
+import authService from '@/services/authService';
+import RolePermissionsDialog from '@/components/RolePermissionsDialog.vue';
 import session from '@/store/session';
 
 // En espejo con la regla del backend.
@@ -135,6 +147,8 @@ const emptyForm = () => ({
 export default {
   name: 'UserFormDialog',
 
+  components: { RolePermissionsDialog },
+
   props: {
     value: { type: Boolean, default: false },
     /** Usuario a editar; si es null el diálogo opera en modo alta. */
@@ -149,14 +163,18 @@ export default {
     saving: false,
     serverErrors: {},
     generalError: '',
-    roleOptions: [
-      { value: 'admin', text: 'Administrador' },
-      { value: 'supervisor', text: 'Supervisor' },
-      { value: 'cashier', text: 'Cajero' },
-    ],
+    // Los roles llegan del servidor con sus permisos ya descritos, de modo que
+    // la ficha refleje la matriz real y no una copia que pueda desincronizarse.
+    roles: [],
+    permisosAbiertos: false,
+    rolMostrado: null,
   }),
 
   computed: {
+    roleOptions() {
+      return this.roles.map((r) => ({ value: r.value, text: r.label }));
+    },
+
     isOpen: {
       get() {
         return this.value;
@@ -205,7 +223,35 @@ export default {
     },
   },
 
+  created() {
+    this.cargarRoles();
+  },
+
   methods: {
+    async cargarRoles() {
+      try {
+        this.roles = await authService.roles();
+      } catch (error) {
+        // Sin el catálogo el selector queda vacío; el formulario sigue usable
+        // para el resto de campos y el error se reporta al guardar.
+        this.roles = [];
+      }
+    },
+
+    /** Al cambiar de rol se muestra qué implica, antes de guardar. */
+    onRoleChange() {
+      this.clearServerError('role');
+      this.mostrarPermisos();
+    },
+
+    mostrarPermisos(role = null) {
+      const buscado = role || this.form.role;
+      const ficha = this.roles.find((r) => r.value === buscado);
+      if (!ficha) return;
+      this.rolMostrado = ficha;
+      this.permisosAbiertos = true;
+    },
+
     reset() {
       this.form = this.isEditing
         ? {

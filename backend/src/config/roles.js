@@ -66,6 +66,40 @@ const ROLE_PERMISSIONS = {
   [ROLES.ADMIN]: Object.values(PERMISSIONS),
 };
 
+/**
+ * Descripción de cada permiso en lenguaje llano, agrupada por área.
+ *
+ * Vive junto a la definición de permisos y no en el cliente, para que añadir un
+ * permiso obligue a describirlo aquí mismo. Una lista de funciones mantenida
+ * aparte se desincroniza en la primera prisa y acaba prometiendo cosas que el
+ * sistema ya no hace.
+ */
+const PERMISSION_INFO = {
+  [P.PRODUCTS_VIEW]: { group: 'Catálogo', label: 'Consultar el catálogo', detail: 'Buscar productos por nombre o código de barras' },
+  [P.PRODUCTS_MANAGE]: { group: 'Catálogo', label: 'Administrar productos', detail: 'Dar de alta, editar precios y dar de baja' },
+
+  [P.SALES_CREATE]: { group: 'Ventas', label: 'Registrar ventas', detail: 'Cobrar y guardar la venta, ajustando precios si hace falta' },
+  [P.SALES_VIEW]: { group: 'Ventas', label: 'Consultar el historial', detail: 'Ver ventas registradas y su ticket' },
+  [P.SALES_VIEW_ALL]: { group: 'Ventas', label: 'Ver las ventas de todos', detail: 'No solo las propias, sino las de cualquier cajero' },
+  [P.SALES_CANCEL]: { group: 'Ventas', label: 'Anular ventas', detail: 'Cancelar una venta indicando el motivo' },
+
+  [P.CASH_OPERATE]: { group: 'Caja', label: 'Operar su turno', detail: 'Abrir y cerrar su propio turno de caja' },
+  [P.CASH_VIEW_ALL]: { group: 'Caja', label: 'Ver todos los cortes', detail: 'Revisar los turnos de cualquier cajero' },
+
+  [P.DASHBOARD_VIEW]: { group: 'Análisis', label: 'Ver el tablero', detail: 'Indicadores del día, ventas por hora y más vendidos' },
+  [P.REPORTS_VIEW]: { group: 'Análisis', label: 'Ver reportes', detail: 'Reportes por período y exportación a CSV' },
+
+  [P.USERS_MANAGE]: { group: 'Administración', label: 'Gestionar usuarios', detail: 'Crear cuentas, asignar roles y dar de baja' },
+  [P.AUDIT_VIEW]: { group: 'Administración', label: 'Consultar la bitácora', detail: 'Ver quién hizo qué y cuándo en el sistema' },
+};
+
+/** Resumen de un rol en una frase, para encabezar su ficha. */
+const ROLE_SUMMARY = {
+  [ROLES.ADMIN]: 'Acceso completo, incluida la gestión de usuarios y la bitácora del sistema.',
+  [ROLES.SUPERVISOR]: 'Administra el catálogo, anula ventas y consulta el análisis del negocio.',
+  [ROLES.CASHIER]: 'Atiende el mostrador: busca productos, cobra y opera su turno de caja.',
+};
+
 const ROLE_LABELS = {
   [ROLES.ADMIN]: 'Administrador',
   [ROLES.SUPERVISOR]: 'Supervisor',
@@ -81,11 +115,27 @@ function hasPermission(role, permission) {
   return permissionsFor(role).includes(permission);
 }
 
+/** Ficha completa de un rol: etiqueta, resumen y permisos ya descritos. */
+function describeRole(role) {
+  return {
+    value: role,
+    label: ROLE_LABELS[role] || role,
+    summary: ROLE_SUMMARY[role] || '',
+    permissions: permissionsFor(role).map((permission) => ({
+      key: permission,
+      ...(PERMISSION_INFO[permission] || { group: 'Otros', label: permission, detail: '' }),
+    })),
+  };
+}
+
 module.exports = {
   ROLES,
   PERMISSIONS,
   ROLE_PERMISSIONS,
   ROLE_LABELS,
+  PERMISSION_INFO,
+  ROLE_SUMMARY,
+  describeRole,
   permissionsFor,
   hasPermission,
 };

@@ -19,9 +19,9 @@
       <v-spacer />
 
       <div class="filters__range">
-        <v-text-field v-model="from" type="date" label="Desde" outlined dense hide-details style="max-width: 168px" @change="presetActivo = null; cargar()" />
+        <v-text-field v-model="from" type="date" label="Desde" outlined dense hide-details class="field-date" @change="presetActivo = null; cargar()" />
         <span class="mx-2 text--secondary">→</span>
-        <v-text-field v-model="to" type="date" label="Hasta" outlined dense hide-details style="max-width: 168px" @change="presetActivo = null; cargar()" />
+        <v-text-field v-model="to" type="date" label="Hasta" outlined dense hide-details class="field-date" @change="presetActivo = null; cargar()" />
       </div>
 
       <v-menu offset-y left>
