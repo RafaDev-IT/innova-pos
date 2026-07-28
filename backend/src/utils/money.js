@@ -81,6 +81,24 @@ function toAmountString(value) {
 }
 
 /**
+ * Comprueba que un importe no traiga más decimales de los que la moneda admite.
+ *
+ * Redondear en silencio es peor que rechazar: quien teclea 2.99999 y ve
+ * guardado 3.00 no se entera de que el sistema decidió por él, y en un precio
+ * esa diferencia es dinero.
+ */
+function hasValidPrecision(value, decimales = 2) {
+  if (typeof value === 'number') {
+    // Un number ya perdió su representación textual; se juzga por su valor.
+    return Number.isInteger(value * 10 ** decimales);
+  }
+
+  const texto = String(value === null || value === undefined ? '' : value).trim();
+  const parte = texto.split('.')[1];
+  return parte === undefined || parte.length <= decimales;
+}
+
+/**
  * Valida que un monto sea un número finito, no negativo y dentro del rango
  * representable por DECIMAL(10,2).
  */
@@ -94,6 +112,7 @@ function isValidAmount(value) {
 module.exports = {
   CENTS_PER_UNIT,
   MAX_AMOUNT,
+  hasValidPrecision,
   toCents,
   fromCents,
   toAmountString,

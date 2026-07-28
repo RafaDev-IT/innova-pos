@@ -1,5 +1,5 @@
 const { body, param, query } = require('express-validator');
-const { isValidAmount, MAX_AMOUNT } = require('../utils/money');
+const { isValidAmount, hasValidPrecision, MAX_AMOUNT } = require('../utils/money');
 
 const createSale = [
   body('items')
@@ -31,6 +31,9 @@ const createSale = [
     .custom((value) => {
       if (!isValidAmount(value)) {
         throw new Error(`El precio debe ser un número entre 0 y ${MAX_AMOUNT}`);
+      }
+      if (!hasValidPrecision(value)) {
+        throw new Error('El precio admite como máximo dos decimales');
       }
       return true;
     }),
