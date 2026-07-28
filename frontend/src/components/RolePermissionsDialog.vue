@@ -6,8 +6,8 @@
           <v-icon size="20" :color="colorRol">{{ iconoRol }}</v-icon>
         </div>
         <div class="flex-grow-1">
-          <div class="dialog__title">{{ rol.label }}</div>
-          <div class="dialog__sub">{{ rol.permissions.length }} funciones habilitadas</div>
+          <div class="dialog__title">{{ titulo }}</div>
+          <div class="dialog__sub">{{ subtitulo }}</div>
         </div>
         <v-btn icon small @click="$emit('input', false)"><v-icon size="20">mdi-close</v-icon></v-btn>
       </div>
@@ -39,7 +39,7 @@
 
       <div class="dialog__foot">
         <v-spacer />
-        <v-btn depressed class="btn-soft" @click="$emit('input', false)">Entendido</v-btn>
+        <v-btn depressed class="btn-soft" @click="$emit('input', false)">{{ textoCierre }}</v-btn>
       </div>
     </div>
   </v-dialog>
@@ -55,9 +55,29 @@ export default {
     rol: { type: Object, default: null },
     /** Fichas de todos los roles, para deducir qué le falta a este. */
     todos: { type: Array, default: () => [] },
+    /**
+     * Nombre de quien acaba de iniciar sesión. Cuando se indica, la cabecera
+     * saluda en lugar de limitarse a nombrar el rol: el mismo contenido sirve
+     * para consultar un rol ajeno desde el formulario de usuarios y para
+     * explicarle a alguien qué puede hacer al entrar, y son dos lecturas
+     * distintas del mismo dato.
+     */
+    saludoA: { type: String, default: '' },
+    /** Texto del botón de cierre. */
+    textoCierre: { type: String, default: 'Entendido' },
   },
 
   computed: {
+    titulo() {
+      return this.saludoA ? `Hola, ${this.saludoA.split(' ')[0]}` : this.rol.label;
+    },
+
+    subtitulo() {
+      return this.saludoA
+        ? `Entraste como ${this.rol.label}. Esto es lo que puedes hacer:`
+        : `${this.rol.permissions.length} funciones habilitadas`;
+    },
+
     claseRol() {
       return { admin: 'accent', supervisor: 'primary', cashier: 'muted' }[this.rol.value] || 'primary';
     },
