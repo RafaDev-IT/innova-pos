@@ -44,19 +44,26 @@ const dark = {
 export const THEME_STORAGE_KEY = 'innova-pos:theme';
 
 /**
- * Arranca en el tema que el usuario eligió la última vez; si nunca eligió,
- * respeta la preferencia del sistema. Muchos comercios operan de noche con
- * poca luz ambiental, y forzar el tema claro deslumbra.
+ * Arranca en el tema que el usuario eligió la última vez y, si nunca eligió, en
+ * claro.
+ *
+ * Antes se heredaba la preferencia del sistema operativo, con el argumento de
+ * que muchos comercios operan de noche. En la práctica eso hace que el primer
+ * contacto con el sistema dependa de una configuración ajena a él: la misma
+ * instalación se ve distinta en dos cajas según cómo tenga cada una Windows, y
+ * quien lo abre por primera vez no entiende por qué. El tema claro es el que
+ * está diseñado como principal, así que es el que debe verse por defecto.
+ *
+ * El botón de la barra lateral sigue disponible y su elección se recuerda, que
+ * es lo que resuelve de verdad el caso de trabajar con poca luz.
  */
 function prefersDark() {
   try {
-    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-    if (stored === 'dark') return true;
-    if (stored === 'light') return false;
+    return window.localStorage.getItem(THEME_STORAGE_KEY) === 'dark';
   } catch (error) {
-    // localStorage puede estar bloqueado; se cae a la preferencia del sistema.
+    // localStorage puede estar bloqueado (modo privado, cookies restringidas).
+    return false;
   }
-  return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
 }
 
 export default new Vuetify({
