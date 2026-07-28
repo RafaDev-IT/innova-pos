@@ -263,7 +263,7 @@ export default {
         this.$emit('saved', sale);
       } catch (error) {
         this.errorMessage = error.message;
-        this.$emit('error', error.message);
+        this.$emit('error', error);
       } finally {
         this.saving = false;
       }
