@@ -1,62 +1,99 @@
 <template>
   <v-app>
-    <v-app-bar app flat height="56" class="pos-appbar">
-      <!-- El isotipo va sobre una placa clara: el logo original está diseñado
-           para fondos blancos y su trazo gris pizarra desaparecería sobre la
-           barra oscura. Darle su propio soporte respeta los colores de marca
-           en vez de recolorearlos. -->
-      <div class="pos-brand-plate mr-3">
-        <img :src="brandMark" alt="InnovaB" class="pos-brand-plate__img" />
-      </div>
-      <div class="d-flex flex-column">
-        <span class="pos-brand">Innova POS</span>
-        <span class="pos-brand-sub">by InnovaB</span>
-      </div>
+    <!-- La pantalla de inicio de sesión no lleva armazón: se muestra sola. -->
+    <router-view v-if="isBlankLayout" />
 
-      <v-spacer />
+    <template v-else>
+      <v-navigation-drawer v-model="drawer" app :mini-variant="mini" :width="238" class="pos-nav">
+        <div class="pos-nav__brand">
+          <div class="pos-brand-plate">
+            <img :src="brandMark" alt="InnovaB" class="pos-brand-plate__img" />
+          </div>
+          <div v-if="!mini" class="ml-3">
+            <div class="pos-brand">Innova POS</div>
+            <div class="pos-brand-sub">by InnovaB</div>
+          </div>
+        </div>
 
-      <div class="d-none d-md-flex align-center mr-4" style="gap: 14px">
-        <span class="pos-shortcut-hint"><kbd class="pos-kbd">F2</kbd> Buscar</span>
-        <span class="pos-shortcut-hint"><kbd class="pos-kbd">F9</kbd> Guardar venta</span>
-      </div>
+        <v-divider />
 
-      <div
-        class="pos-status mr-2"
-        :class="apiOnline ? 'pos-status--online' : 'pos-status--offline'"
-        :title="apiOnline ? 'La API responde correctamente' : 'Sin respuesta de la API'"
-      >
-        <span class="pos-status__dot" />
-        <v-icon size="13" :color="apiOnline ? 'success' : 'error'">
-          {{ apiOnline ? 'mdi-check-circle-outline' : 'mdi-alert-circle-outline' }}
-        </v-icon>
-        {{ apiOnline ? 'En línea' : 'Sin conexión' }}
-      </div>
+        <v-list nav dense class="pt-2">
+          <v-list-item
+            v-for="item in navItems"
+            :key="item.name"
+            :to="{ name: item.name }"
+            link
+            class="pos-nav__item"
+          >
+            <v-list-item-icon class="mr-3">
+              <v-icon size="20">{{ item.icon }}</v-icon>
+            </v-list-item-icon>
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
 
-      <v-btn icon dark :title="isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" @click="toggleTheme">
-        <v-icon size="20">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
-      </v-btn>
-    </v-app-bar>
+        <template #append>
+          <v-divider />
+          <div class="pos-nav__user">
+            <v-avatar size="34" color="primary" class="flex-shrink-0">
+              <span class="white--text font-weight-bold">{{ initials }}</span>
+            </v-avatar>
+            <div v-if="!mini" class="pos-nav__user-info">
+              <div class="pos-nav__user-name">{{ user.name }}</div>
+              <div class="pos-nav__user-role">{{ roleLabel }}</div>
+            </div>
+            <v-menu v-if="!mini" top offset-y>
+              <template #activator="{ on, attrs }">
+                <v-btn icon small v-bind="attrs" v-on="on">
+                  <v-icon size="18">mdi-dots-vertical</v-icon>
+                </v-btn>
+              </template>
+              <v-list dense>
+                <v-list-item :to="{ name: 'account' }">
+                  <v-list-item-icon class="mr-3"><v-icon size="18">mdi-account-circle-outline</v-icon></v-list-item-icon>
+                  <v-list-item-title>Mi cuenta</v-list-item-title>
+                </v-list-item>
+                <v-list-item @click="logout">
+                  <v-list-item-icon class="mr-3"><v-icon size="18">mdi-logout</v-icon></v-list-item-icon>
+                  <v-list-item-title>Cerrar sesión</v-list-item-title>
+                </v-list-item>
+              </v-list>
+            </v-menu>
+          </div>
+        </template>
+      </v-navigation-drawer>
 
-    <v-main>
-      <v-container fluid class="pa-4 pos-shell">
-        <v-row class="pos-grid">
-          <!-- Catálogo: búsqueda y alta de productos. -->
-          <v-col cols="12" md="7" class="pos-grid__col">
-            <ProductCatalog
-              ref="catalog"
-              @add-to-sale="onAddToSale"
-              @notify="notify($event)"
-              @error="onModuleError($event)"
-            />
-          </v-col>
+      <v-app-bar app flat height="56" class="pos-appbar">
+        <v-btn icon dark :title="mini ? 'Expandir menú' : 'Contraer menú'" @click="toggleNav">
+          <v-icon size="21">mdi-menu</v-icon>
+        </v-btn>
+        <span class="pos-appbar__title ml-2">{{ pageTitle }}</span>
 
-          <!-- Venta: carrito, edición de precios y total. -->
-          <v-col cols="12" md="5" class="pos-grid__col">
-            <SalePanel ref="salePanel" @saved="onSaleSaved" @error="onModuleError($event)" />
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-main>
+        <v-spacer />
+
+        <div v-if="$route.name === 'pos'" class="d-none d-lg-flex align-center mr-4" style="gap: 14px">
+          <span class="pos-shortcut-hint"><kbd class="pos-kbd">F2</kbd> Buscar</span>
+          <span class="pos-shortcut-hint"><kbd class="pos-kbd">F9</kbd> Guardar venta</span>
+        </div>
+
+        <div
+          class="pos-status mr-2"
+          :class="apiOnline ? 'pos-status--online' : 'pos-status--offline'"
+          :title="apiOnline ? 'La API responde correctamente' : 'Sin respuesta de la API'"
+        >
+          <span class="pos-status__dot" />
+          {{ apiOnline ? 'En línea' : 'Sin conexión' }}
+        </div>
+
+        <v-btn icon dark :title="isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" @click="toggleTheme">
+          <v-icon size="20">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+        </v-btn>
+      </v-app-bar>
+
+      <v-main>
+        <router-view @notify="notify($event)" @error="onModuleError($event)" />
+      </v-main>
+    </template>
 
     <v-snackbar v-model="notification.visible" :color="notification.color" :timeout="3600" bottom right>
       <div class="d-flex align-center">
@@ -71,31 +108,63 @@
 </template>
 
 <script>
-import http from '@/services/http';
-import ProductCatalog from '@/components/ProductCatalog.vue';
-import SalePanel from '@/components/SalePanel.vue';
+import http, { setSessionExpiredHandler } from '@/services/http';
+import session from '@/store/session';
 import { THEME_STORAGE_KEY } from '@/plugins/vuetify';
 import brandMark from '@/assets/innovab-mark.png';
 
 const HEALTH_INTERVAL_MS = 15000;
+const NAV_STORAGE_KEY = 'innova-pos:nav-mini';
 
 export default {
   name: 'App',
 
-  components: { ProductCatalog, SalePanel },
-
   data: () => ({
     brandMark,
+    drawer: true,
+    mini: false,
     apiOnline: false,
     healthTimer: null,
-    notification: {
-      visible: false,
-      message: '',
-      color: 'success',
-    },
+    notification: { visible: false, message: '', color: 'success' },
   }),
 
   computed: {
+    isBlankLayout() {
+      return this.$route.meta.layout === 'blank';
+    },
+
+    user() {
+      return session.state.user || {};
+    },
+
+    roleLabel() {
+      return session.state.roleLabel;
+    },
+
+    initials() {
+      return (this.user.name || '?')
+        .split(' ')
+        .slice(0, 2)
+        .map((palabra) => palabra.charAt(0).toUpperCase())
+        .join('');
+    },
+
+    pageTitle() {
+      return this.$route.meta.title || '';
+    },
+
+    /** Solo las rutas visibles para las que el usuario tiene permiso. */
+    navItems() {
+      return this.$router.options.routes
+        .filter((route) => route.meta && !route.meta.public && !route.meta.hiddenInNav)
+        .filter((route) => !route.meta.permission || session.can(route.meta.permission))
+        .map((route) => ({
+          name: route.name,
+          title: route.meta.title,
+          icon: route.meta.icon,
+        }));
+    },
+
     isDark() {
       return this.$vuetify.theme.dark;
     },
@@ -108,34 +177,32 @@ export default {
   },
 
   created() {
-    this.checkApiHealth({ silent: true });
-    // El indicador se revalida periódicamente: comprobarlo solo al arrancar
-    // haría que siguiera anunciando "En línea" después de que la API cayera,
-    // afirmando un estado que no se verificó.
-    this.healthTimer = setInterval(() => this.checkApiHealth({ silent: true }), HEALTH_INTERVAL_MS);
-  },
+    // Si el token deja de ser válido en cualquier momento, se limpia la sesión
+    // y se lleva al usuario al inicio de sesión sin dejarlo en una pantalla
+    // que ya no puede usar.
+    setSessionExpiredHandler((message) => this.onSessionExpired(message));
 
-  mounted() {
-    window.addEventListener('keydown', this.onGlobalKey);
+    try {
+      this.mini = window.localStorage.getItem(NAV_STORAGE_KEY) === '1';
+    } catch (error) {
+      this.mini = false;
+    }
+
+    this.checkApiHealth({ silent: true });
+    this.healthTimer = setInterval(() => this.checkApiHealth({ silent: true }), HEALTH_INTERVAL_MS);
   },
 
   beforeDestroy() {
     clearInterval(this.healthTimer);
-    window.removeEventListener('keydown', this.onGlobalKey);
   },
 
   methods: {
-    /**
-     * Atajos globales. El flujo completo de una venta debe poder hacerse sin
-     * soltar el teclado: escanear, Enter, escanear, Enter, F9.
-     */
-    onGlobalKey(event) {
-      if (event.key === 'F2') {
-        event.preventDefault();
-        this.$refs.catalog.focusSearch();
-      } else if (event.key === 'F9') {
-        event.preventDefault();
-        this.$refs.salePanel.save();
+    toggleNav() {
+      this.mini = !this.mini;
+      try {
+        window.localStorage.setItem(NAV_STORAGE_KEY, this.mini ? '1' : '0');
+      } catch (error) {
+        // Sin localStorage la preferencia no persiste; no es crítico.
       }
     },
 
@@ -144,7 +211,21 @@ export default {
       try {
         window.localStorage.setItem(THEME_STORAGE_KEY, this.$vuetify.theme.dark ? 'dark' : 'light');
       } catch (error) {
-        // Sin localStorage el tema simplemente no persiste entre sesiones.
+        // Igual que arriba: solo se pierde la persistencia.
+      }
+    },
+
+    async logout() {
+      await session.logout();
+      this.$router.push({ name: 'login' });
+    },
+
+    onSessionExpired(message) {
+      if (!session.isAuthenticated) return;
+      session.clear();
+      this.notify(message || 'Tu sesión expiró', 'error');
+      if (this.$route.name !== 'login') {
+        this.$router.push({ name: 'login', query: { redirect: this.$route.fullPath } });
       }
     },
 
@@ -153,7 +234,6 @@ export default {
       try {
         await http.get('/health');
         this.apiOnline = true;
-        // Solo se avisa de la recuperación, no de cada sondeo correcto.
         if (!estabaEnLinea && !silent) this.notify('Conexión con la API restablecida');
       } catch (error) {
         this.apiOnline = false;
@@ -161,15 +241,10 @@ export default {
       }
     },
 
-    /** Punto único de notificaciones: los módulos hijos emiten hacia aquí. */
     notify(message, color = 'success') {
       this.notification = { visible: true, message, color };
     },
 
-    /**
-     * Un módulo reportó un fallo. Si fue de conexión se revalida el estado de
-     * la API de inmediato, sin esperar al siguiente sondeo.
-     */
     onModuleError(error) {
       const message = typeof error === 'string' ? error : error.message;
       this.notify(message, 'error');
@@ -180,19 +255,6 @@ export default {
         this.checkApiHealth({ silent: true });
       }
     },
-
-    /**
-     * El catálogo solo anuncia qué producto se eligió; el panel de venta es
-     * quien decide cómo incorporarlo al carrito. Así el catálogo no necesita
-     * conocer la estructura de la venta.
-     */
-    onAddToSale(product) {
-      this.$refs.salePanel.addProduct(product);
-    },
-
-    onSaleSaved(sale) {
-      this.notify(`Venta ${sale.folio} registrada`);
-    },
   },
 };
 </script>
@@ -202,35 +264,57 @@ html {
   overflow-y: auto;
 }
 
-.pos-shell {
-  max-width: 1800px;
+.pos-appbar__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--pos-on-ink);
+  letter-spacing: -0.01em;
 }
 
-/* Las dos columnas comparten altura y hacen scroll por dentro, de modo que el
-   total nunca queda fuera de la vista. La separación se deja a los gutters de
-   Vuetify: sumar un `gap` propio a columnas que ya ocupan el 100% desborda el
-   viewport horizontalmente. */
-.pos-grid {
-  flex-wrap: nowrap;
+.pos-nav {
+  background: var(--pos-surface) !important;
+  border-right: 1px solid var(--pos-border) !important;
 }
-.pos-grid__col {
-  height: calc(100vh - 88px);
-  min-height: 520px;
+
+.pos-nav__brand {
   display: flex;
-}
-.pos-grid__col > * {
-  flex: 1 1 auto;
-  min-width: 0;
+  align-items: center;
+  padding: 10px 12px;
+  height: 56px;
 }
 
-@media (max-width: 959px) {
-  .pos-grid {
-    flex-wrap: wrap;
-  }
-  .pos-grid__col {
-    height: auto;
-    min-height: 0;
-  }
+.pos-nav__item.v-list-item--active {
+  background: var(--pos-primary-soft) !important;
+  color: var(--pos-primary) !important;
+}
+.pos-nav__item .v-list-item__title {
+  font-size: 0.875rem;
+  font-weight: 550;
+}
+
+.pos-nav__user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+}
+.pos-nav__user-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.pos-nav__user-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pos-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pos-nav__user-role {
+  font-size: 0.6875rem;
+  color: var(--pos-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .pos-brand-plate {
@@ -238,6 +322,7 @@ html {
   height: 36px;
   border-radius: 9px;
   background: #ffffff;
+  border: 1px solid var(--pos-border);
   display: grid;
   place-items: center;
   padding: 4px;
@@ -250,14 +335,20 @@ html {
   display: block;
 }
 
+.pos-brand {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  letter-spacing: -0.02em;
+  color: var(--pos-text);
+  line-height: 1.2;
+}
 .pos-brand-sub {
   font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--pos-on-ink-muted);
+  color: var(--pos-text-faint);
   line-height: 1;
-  margin-top: 1px;
 }
 
 .pos-shortcut-hint {
