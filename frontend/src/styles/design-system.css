@@ -1086,3 +1086,12 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* Vista previa del código de barras dentro del formulario. */
+.barcode-preview {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  border-radius: var(--r-md);
+  background: var(--pos-surface-2);
+}

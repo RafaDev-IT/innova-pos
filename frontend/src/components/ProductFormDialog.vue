@@ -34,15 +34,27 @@
             <v-text-field
               v-model="form.barcode"
               label="Código de barras"
-              placeholder="7501055300013"
+              placeholder="7410010000015"
               outlined
               dense
               class="pos-field-barcode mb-1"
               prepend-inner-icon="mdi-barcode"
+              :hint="pistaCodigo"
+              persistent-hint
               :rules="rules.barcode"
               :error-messages="serverErrors.barcode"
               @input="clearServerError('barcode')"
-            />
+            >
+              <!-- Leer con la cámara o pedir otro código sin salir del campo. -->
+              <template #append>
+                <v-btn icon x-small title="Escanear con la cámara" @click="scannerAbierto = true">
+                  <v-icon size="17">mdi-barcode-scan</v-icon>
+                </v-btn>
+                <v-btn icon x-small title="Generar otro código" @click="regenerarCodigo">
+                  <v-icon size="17">mdi-refresh</v-icon>
+                </v-btn>
+              </template>
+            </v-text-field>
 
             <v-text-field
               v-model="form.price"
@@ -73,6 +85,12 @@
             :error-messages="serverErrors.imageUrl"
             @input="clearServerError('imageUrl')"
           />
+
+          <!-- Representación gráfica del código, para comprobar de un vistazo
+               que es legible antes de imprimir la etiqueta. -->
+          <div class="barcode-preview mb-3">
+            <BarcodeImage :code="form.barcode" :height="58" />
+          </div>
 
           <!-- Vista previa: confirma que la URL sirve antes de guardar. -->
           <div class="form-preview mt-3 mb-1">
@@ -131,6 +149,8 @@
         </v-btn>
       </div>
     </div>
+
+    <BarcodeScanner v-model="scannerAbierto" @scanned="onEscaneado" />
   </v-dialog>
 </template>
 
@@ -138,11 +158,16 @@
 import productService from '@/services/productService';
 import { toAmountString } from '@/utils/format';
 import { fallbackGradient, initials } from '@/utils/productImage';
+import { generateEan13, isValidEan13 } from '@/utils/barcode';
+import BarcodeImage from '@/components/BarcodeImage.vue';
+import BarcodeScanner from '@/components/BarcodeScanner.vue';
 
 const emptyForm = () => ({ name: '', barcode: '', price: '', description: '', imageUrl: '' });
 
 export default {
   name: 'ProductFormDialog',
+
+  components: { BarcodeImage, BarcodeScanner },
 
   props: {
     value: { type: Boolean, default: false },
@@ -157,6 +182,7 @@ export default {
     serverErrors: {},
     generalError: '',
     previewFailed: false,
+    scannerAbierto: false,
   }),
 
   computed: {
@@ -179,6 +205,19 @@ export default {
 
     previewInitials() {
       return this.form.name ? initials(this.form.name) : '?';
+    },
+
+    /**
+     * Indica si el código es un EAN-13 legítimo. No bloquea el guardado:
+     * un comercio puede usar códigos internos que no siguen la norma, y
+     * rechazarlos sería imponer una regla que el negocio no pidió.
+     */
+    pistaCodigo() {
+      const codigo = String(this.form.barcode || '').trim();
+      if (!codigo) return 'Se genera uno automáticamente';
+      if (isValidEan13(codigo)) return 'EAN-13 válido';
+      if (/^\d{13}$/.test(codigo)) return 'Trece dígitos, pero el verificador no cuadra';
+      return 'Código propio (no es un EAN-13)';
     },
 
     rules() {
@@ -230,6 +269,10 @@ export default {
 
       this.previewFailed = false;
 
+      // En alta se propone un código válido desde el inicio: el campo es
+      // obligatorio y muchos artículos de tienda no traen uno impreso.
+      if (!this.isEditing) this.form.barcode = generateEan13();
+
       this.serverErrors = {};
       this.generalError = '';
       this.saving = false;
@@ -237,6 +280,17 @@ export default {
       this.$nextTick(() => {
         if (this.$refs.form) this.$refs.form.resetValidation();
       });
+    },
+
+    /** Código leído con la cámara: sustituye al propuesto. */
+    onEscaneado(codigo) {
+      this.form.barcode = codigo;
+      this.clearServerError('barcode');
+    },
+
+    regenerarCodigo() {
+      this.form.barcode = generateEan13();
+      this.clearServerError('barcode');
     },
 
     clearServerError(field) {

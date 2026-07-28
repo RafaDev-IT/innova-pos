@@ -3,6 +3,7 @@ import { mount, createLocalVue } from '@vue/test-utils';
 import Vuetify from 'vuetify';
 import ProductFormDialog from '@/components/ProductFormDialog.vue';
 import productService from '@/services/productService';
+import { isValidEan13 } from '@/utils/barcode';
 
 vi.mock('@/services/productService', () => ({
   default: {
@@ -123,6 +124,75 @@ describe('ProductFormDialog', () => {
     await wrapper.vm.submit();
 
     expect(wrapper.vm.generalError).toBe('No se pudo conectar con el servidor');
+    wrapper.destroy();
+  });
+  it('propone un código de barras válido al abrir en modo alta', async () => {
+    const wrapper = mountDialog();
+    await wrapper.vm.$nextTick();
+
+    // El campo es obligatorio y muchos artículos no traen código impreso.
+    expect(wrapper.vm.form.barcode).toMatch(/^\d{13}$/);
+    expect(isValidEan13(wrapper.vm.form.barcode)).toBe(true);
+    wrapper.destroy();
+  });
+
+  it('el código propuesto usa el prefijo de El Salvador', async () => {
+    const wrapper = mountDialog();
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.form.barcode.startsWith('741')).toBe(true);
+    wrapper.destroy();
+  });
+
+  it('no toca el código al abrir en modo edición', async () => {
+    const product = { id: 5, name: 'Coca', barcode: '7410010000015', price: '0.75', description: null };
+    const wrapper = mountDialog({ product });
+    await wrapper.vm.$nextTick();
+
+    // Regenerarlo aquí cambiaría en silencio el código de un producto ya
+    // etiquetado en el estante.
+    expect(wrapper.vm.form.barcode).toBe('7410010000015');
+    wrapper.destroy();
+  });
+
+  it('permite sustituir el código propuesto por otro', async () => {
+    productService.create.mockResolvedValue({ id: 1, name: 'Propio' });
+    const wrapper = mountDialog();
+    await wrapper.vm.$nextTick();
+
+    wrapper.vm.form = { name: 'Producto propio', barcode: 'INTERNO-042', price: '1.50', description: '' };
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.submit();
+
+    expect(productService.create).toHaveBeenCalledWith(expect.objectContaining({ barcode: 'INTERNO-042' }));
+    wrapper.destroy();
+  });
+
+  it('genera un código distinto al pedir otro', async () => {
+    const wrapper = mountDialog();
+    await wrapper.vm.$nextTick();
+    const primero = wrapper.vm.form.barcode;
+
+    wrapper.vm.regenerarCodigo();
+
+    expect(wrapper.vm.form.barcode).not.toBe(primero);
+    expect(isValidEan13(wrapper.vm.form.barcode)).toBe(true);
+    wrapper.destroy();
+  });
+
+  it('describe el código escrito sin bloquear el guardado', async () => {
+    const wrapper = mountDialog();
+    await wrapper.vm.$nextTick();
+
+    wrapper.vm.form.barcode = '4006381333931';
+    expect(wrapper.vm.pistaCodigo).toBe('EAN-13 válido');
+
+    wrapper.vm.form.barcode = '4006381333932';
+    expect(wrapper.vm.pistaCodigo).toMatch(/verificador/);
+
+    // Un comercio puede usar códigos internos: se informa, no se rechaza.
+    wrapper.vm.form.barcode = 'INTERNO-7';
+    expect(wrapper.vm.pistaCodigo).toMatch(/propio/);
     wrapper.destroy();
   });
 });
