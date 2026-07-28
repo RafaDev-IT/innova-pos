@@ -221,10 +221,26 @@ separado.
 | API | Render | `render.yaml` |
 | Base de datos | Supabase | `DATABASE_URL` |
 
-**Base de datos.** Copia la cadena del *Session pooler* de Supabase (puerto
-5432) en `DATABASE_URL`. El *Transaction pooler* (6543) no admite sentencias
-preparadas y rompe las migraciones. Cuando esa variable está presente tiene
-prioridad sobre `DB_HOST`/`DB_NAME`/etc. y activa TLS automáticamente.
+**Base de datos.** Basta con definir `DATABASE_URL`: cuando está presente tiene
+prioridad sobre `DB_HOST`/`DB_NAME`/etc., activa TLS automáticamente y la usan
+por igual la API y las migraciones. Comentarla vuelve a la base local sin ningún
+otro cambio.
+
+Supabase ofrece tres cadenas en *Project Settings → Database* y solo una sirve:
+
+| Opción | |
+|---|---|
+| **Session pooler** (5432) | ✔ La correcta. Usuario `postgres.<ref>`, host `aws-N-<región>.pooler.supabase.com` |
+| Direct connection | ✖ `db.<ref>.supabase.co` solo resuelve a IPv6, y el plan gratuito de Render no tiene salida IPv6: falla con `ENETUNREACH` |
+| Transaction pooler (6543) | ✖ No admite sentencias preparadas y rompe las migraciones |
+
+```bash
+cd backend
+DATABASE_URL='postgresql://postgres.<ref>:<contraseña>@aws-N-<región>.pooler.supabase.com:5432/postgres' \
+NODE_ENV=production npm run db:migrate
+# …y una sola vez, para crear el administrador:
+DATABASE_URL='…' NODE_ENV=production npm run db:seed:prod
+```
 
 **API.** El blueprint `render.yaml` aplica las migraciones en el paso de build,
 antes de que la instancia reciba tráfico. Quedan dos variables por completar en
