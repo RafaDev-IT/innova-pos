@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main, ProductionEnv, 'feature/**']
+    branches: [main, ProductionEnv, 'feature/**', 'fix/**']
   pull_request:
     branches: [main, ProductionEnv]
+  # Permite lanzar la verificación a demanda desde la pestaña Actions, sin
+  # tener que empujar un commit vacío para forzarla.
+  workflow_dispatch:
 
 jobs:
   backend:
