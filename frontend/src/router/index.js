@@ -26,6 +26,12 @@ const routes = [
     meta: { permission: PERMISSIONS.SALES_CREATE, title: 'Punto de venta', icon: 'mdi-point-of-sale' },
   },
   {
+    path: '/ventas',
+    name: 'sales-history',
+    component: () => import('@/views/SalesHistoryView.vue'),
+    meta: { permission: PERMISSIONS.SALES_VIEW, title: 'Historial de ventas', icon: 'mdi-receipt-text-outline' },
+  },
+  {
     path: '/tablero',
     name: 'dashboard',
     component: () => import('@/views/DashboardView.vue'),
