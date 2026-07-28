@@ -24,10 +24,11 @@
 
           <!-- Columna de venta: carrito, edición de precios y total. -->
           <v-col cols="12" md="5">
-            <v-card outlined class="pa-6 text-center grey--text">
-              <v-icon size="48" color="grey lighten-1">mdi-cart-outline</v-icon>
-              <div class="mt-2">Módulo de venta</div>
-            </v-card>
+            <SalePanel
+              ref="salePanel"
+              @saved="onSaleSaved"
+              @error="notify($event, 'error')"
+            />
           </v-col>
         </v-row>
       </v-container>
@@ -45,11 +46,12 @@
 <script>
 import http from '@/services/http';
 import ProductCatalog from '@/components/ProductCatalog.vue';
+import SalePanel from '@/components/SalePanel.vue';
 
 export default {
   name: 'App',
 
-  components: { ProductCatalog },
+  components: { ProductCatalog, SalePanel },
 
   data: () => ({
     apiOnline: false,
@@ -81,11 +83,17 @@ export default {
     },
 
     /**
-     * El catálogo solo anuncia qué producto se eligió; el módulo de venta es
-     * quien decide cómo incorporarlo al carrito.
+     * El catálogo solo anuncia qué producto se eligió; el panel de venta es
+     * quien decide cómo incorporarlo al carrito. Así el catálogo no necesita
+     * conocer la estructura de la venta.
      */
     onAddToSale(product) {
-      this.notify(`"${product.name}" seleccionado`);
+      this.$refs.salePanel.addProduct(product);
+      this.notify(`"${product.name}" agregado a la venta`);
+    },
+
+    onSaleSaved(sale) {
+      this.notify(`Venta ${sale.folio} registrada por ${sale.total}`);
     },
   },
 };
