@@ -797,12 +797,45 @@
    DIÁLOGOS
    ============================================================================= */
 
+/*
+ * Los diálogos usan esta caja propia en lugar de `v-card`, porque `v-card` no
+ * recibe las clases de tema de Vuetify cuando se declara como `div`.
+ *
+ * El precio de no usar `v-card` es que tampoco se hereda su comportamiento de
+ * desplazamiento: `scrollable` de Vuetify solo cablea `.v-card > .v-card__text`.
+ * Sin replicarlo, un diálogo más alto que la ventana se recorta sin manera de
+ * moverlo, y lo que queda fuera es el pie —es decir, el botón de cerrar—.
+ *
+ * La solución es una columna flexible con tope de altura: cabecera y pie fijos,
+ * cuerpo desplazable.
+ */
 .dialog {
   background: var(--pos-surface) !important;
   color: var(--pos-text) !important;
   border-radius: var(--r-xl) !important;
   box-shadow: var(--pos-shadow-lift) !important;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* En vh y no en %: un max-height porcentual se mide contra el padre, cuya
+     altura la define el propio contenido, y entonces no limita nada. */
+  max-height: 90vh;
+}
+.dialog__head,
+.dialog__foot {
+  /* No se encogen: el botón de cerrar debe seguir alcanzable siempre. */
+  flex: 0 0 auto;
+}
+.dialog__body {
+  padding: 16px 22px 4px;
+  flex: 1 1 auto;
+  /* Imprescindible. Un elemento flexible arranca con `min-height: auto`, que le
+     impide bajar de la altura de su contenido; sin esto el cuerpo nunca se
+     comprime y el desplazamiento no llega a activarse. */
+  min-height: 0;
+  overflow-y: auto;
+  /* Al llegar al final del diálogo, la rueda no arrastra la página de detrás. */
+  overscroll-behavior: contain;
 }
 .dialog__head {
   display: flex;
@@ -820,9 +853,6 @@
   color: var(--pos-text-faint);
   margin-top: 1px;
   line-height: 1.4;
-}
-.dialog__body {
-  padding: 16px 22px 4px;
 }
 .dialog__foot {
   display: flex;
