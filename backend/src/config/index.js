@@ -34,6 +34,18 @@ module.exports = {
   env,
   port: Number(process.env.PORT || 3000),
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  /**
+   * Zona horaria del negocio.
+   *
+   * Las marcas de tiempo se guardan en UTC, pero un reporte por hora tiene que
+   * responder "¿a qué hora vendió la tienda?", no "¿a qué hora fue en UTC?".
+   * Agregar sin convertir desplaza toda la curva —seis horas en El Salvador— y
+   * hace que el pico de la tarde aparezca de madrugada.
+   *
+   * El Salvador es UTC-6 todo el año, sin horario de verano, así que la
+   * conversión es constante.
+   */
+  businessTimezone: process.env.BUSINESS_TIMEZONE || 'America/El_Salvador',
   jwt: {
     secret: resolveJwtSecret(),
     // Ocho horas: la duración de un turno de caja. Al terminar la jornada la
