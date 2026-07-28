@@ -19,6 +19,7 @@
     "format": "prettier --write \"src/**/*.{js,vue,css}\""
   },
   "dependencies": {
+    "@fontsource/inter": "^5.3.0",
     "@mdi/font": "^7.4.47",
     "axios": "^1.7.2",
     "vue": "^2.7.16",

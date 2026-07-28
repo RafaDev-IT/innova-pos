@@ -1,144 +1,184 @@
 <template>
-  <v-card outlined class="d-flex flex-column fill-height">
-    <v-card-title class="pb-2">
-      <v-icon left color="primary">mdi-cart-outline</v-icon>
-      <span class="text-subtitle-1 font-weight-bold">Venta actual</span>
+  <div class="pos-panel">
+    <header class="pos-panel__head">
+      <v-icon size="18" color="primary">mdi-cart-outline</v-icon>
+      <span class="pos-panel__title">Venta actual</span>
       <v-spacer />
-      <v-chip small :color="items.length ? 'primary' : 'grey lighten-1'" dark>
+      <span v-if="items.length" class="pos-count-strong">
         {{ unitCount }} {{ unitCount === 1 ? 'artículo' : 'artículos' }}
-      </v-chip>
-    </v-card-title>
+      </span>
+    </header>
 
-    <v-divider />
-
-    <div class="sale-items">
-      <div v-if="!items.length" class="text-center grey--text pa-8">
-        <v-icon size="56" color="grey lighten-1">mdi-cart-off</v-icon>
-        <div class="mt-3">La venta está vacía</div>
-        <div class="text-caption mt-1">Busca un producto en el catálogo para agregarlo</div>
+    <div class="pos-panel__body pos-scroll">
+      <div v-if="!items.length" class="pos-empty">
+        <div class="pos-empty__icon">
+          <v-icon size="26" color="grey">mdi-cart-outline</v-icon>
+        </div>
+        <div class="pos-empty__title">Sin artículos</div>
+        <div class="pos-empty__hint">
+          Escanea un código de barras o elige un producto del catálogo para comenzar la venta.
+        </div>
       </div>
 
-      <v-list v-else two-line class="py-0">
-        <template v-for="(item, index) in items">
-          <v-list-item :key="item.key">
-            <v-list-item-content>
-              <v-list-item-title class="font-weight-medium">{{ item.name }}</v-list-item-title>
+      <div
+        v-for="(item, index) in items"
+        v-else
+        :key="item.key"
+        class="pos-line"
+        :class="{ 'pos-line--edited': isEdited(item) }"
+      >
+        <div class="d-flex align-start">
+          <div class="pos-line__main">
+            <div class="pos-row__name">{{ item.name }}</div>
+            <div class="pos-line__sub">
+              <span class="pos-barcode">{{ item.barcode }}</span>
+              <span v-if="isEdited(item)" class="pos-line__tag">
+                <v-icon size="11" color="accent">mdi-pencil</v-icon>
+                Precio ajustado · antes {{ formatCurrency(item.catalogPrice) }}
+              </span>
+            </div>
+          </div>
 
-              <v-list-item-subtitle class="d-flex align-center flex-wrap mt-1">
-                <!-- Precio editable dentro de la venta: no altera el catálogo. -->
-                <v-text-field
-                  :value="item.unitPrice"
-                  class="price-input mr-3"
-                  dense
-                  outlined
-                  hide-details="auto"
-                  prefix="$"
-                  inputmode="decimal"
-                  :error-messages="item.priceError ? [item.priceError] : []"
-                  @input="updatePrice(index, $event)"
-                />
+          <div class="pos-line__total">{{ formatCurrency(lineTotal(item)) }}</div>
 
-                <div class="d-flex align-center">
-                  <v-btn icon x-small :disabled="item.quantity <= 1" @click="changeQuantity(index, -1)">
-                    <v-icon small>mdi-minus</v-icon>
-                  </v-btn>
-                  <span class="mx-2 font-weight-medium">{{ item.quantity }}</span>
-                  <v-btn icon x-small @click="changeQuantity(index, 1)">
-                    <v-icon small>mdi-plus</v-icon>
-                  </v-btn>
-                </div>
-              </v-list-item-subtitle>
-            </v-list-item-content>
+          <v-btn
+            icon
+            small
+            class="ml-1"
+            color="error"
+            title="Quitar de la venta"
+            @click="removeItem(index)"
+          >
+            <v-icon size="17">mdi-close</v-icon>
+          </v-btn>
+        </div>
 
-            <v-list-item-action class="flex-row align-center">
-              <span class="text-subtitle-1 font-weight-bold mr-3">{{ formatCurrency(lineTotal(item)) }}</span>
-              <v-tooltip bottom>
-                <template #activator="{ on, attrs }">
-                  <v-btn icon small color="error" v-bind="attrs" v-on="on" @click="removeItem(index)">
-                    <v-icon small>mdi-delete-outline</v-icon>
-                  </v-btn>
-                </template>
-                <span>Quitar de la venta</span>
-              </v-tooltip>
-            </v-list-item-action>
-          </v-list-item>
+        <div class="pos-line__controls">
+          <v-text-field
+            :value="item.unitPrice"
+            class="pos-price-field"
+            outlined
+            dense
+            hide-details="auto"
+            prefix="$"
+            inputmode="decimal"
+            :title="`Precio unitario de ${item.name} en esta venta`"
+            :error-messages="item.priceError ? [item.priceError] : []"
+            @input="updatePrice(index, $event)"
+          />
 
-          <v-divider v-if="index < items.length - 1" :key="`d-${item.key}`" />
-        </template>
-      </v-list>
-    </div>
+          <span class="pos-line__x">×</span>
 
-    <v-divider />
-
-    <div class="pa-4 grey lighten-5">
-      <div class="d-flex align-center justify-space-between mb-3">
-        <span class="text-h6">Total</span>
-        <span class="text-h4 font-weight-bold primary--text">{{ formatCurrency(totalAmount) }}</span>
-      </div>
-
-      <v-alert v-if="errorMessage" type="error" dense text class="mb-3">{{ errorMessage }}</v-alert>
-
-      <div class="d-flex">
-        <v-btn text class="flex-grow-1 mr-2" :disabled="!items.length || saving" @click="confirmClear">
-          Vaciar
-        </v-btn>
-        <v-btn
-          color="primary"
-          depressed
-          large
-          class="flex-grow-1"
-          :disabled="!canSave"
-          :loading="saving"
-          @click="save"
-        >
-          <v-icon left>mdi-content-save</v-icon>
-          Guardar venta
-        </v-btn>
+          <div class="pos-qty">
+            <button
+              class="pos-qty__btn"
+              type="button"
+              :disabled="item.quantity <= 1"
+              title="Quitar una unidad"
+              @click="changeQuantity(index, -1)"
+            >
+              <v-icon size="15">mdi-minus</v-icon>
+            </button>
+            <span class="pos-qty__value">{{ item.quantity }}</span>
+            <button class="pos-qty__btn" type="button" title="Agregar una unidad" @click="changeQuantity(index, 1)">
+              <v-icon size="15">mdi-plus</v-icon>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <v-dialog v-model="clearDialog" max-width="400">
-      <v-card>
-        <v-card-title class="text-h6">Vaciar la venta</v-card-title>
-        <v-card-text>Se quitarán los {{ items.length }} renglones capturados. ¿Continuar?</v-card-text>
-        <v-card-actions>
+    <v-alert v-if="errorMessage" type="error" dense text class="ma-3 mb-0">
+      {{ errorMessage }}
+    </v-alert>
+
+    <!-- Losa del total: único elemento con este tratamiento en la pantalla. -->
+    <div class="pos-total">
+      <div class="d-flex align-center justify-space-between">
+        <span class="pos-total__label">Total a cobrar</span>
+        <span v-if="editedCount" class="pos-total__flag">
+          <v-icon size="12" color="accent">mdi-pencil</v-icon>
+          {{ editedCount }} con precio ajustado
+        </span>
+      </div>
+      <div class="pos-total__amount">
+        <span class="pos-total__currency">$</span>{{ totalAmount }}
+      </div>
+    </div>
+
+    <footer class="pos-actions">
+      <v-btn text class="pos-btn-clear" :disabled="!items.length || saving" @click="confirmClear">
+        <v-icon left size="17">mdi-notification-clear-all</v-icon>
+        Vaciar
+      </v-btn>
+      <v-btn
+        depressed
+        class="pos-btn-primary pos-btn-save ml-2"
+        :disabled="!canSave"
+        :loading="saving"
+        @click="save"
+      >
+        <v-icon left size="19">mdi-check-bold</v-icon>
+        Guardar venta
+        <kbd class="pos-kbd pos-kbd--on-primary ml-2">F9</kbd>
+      </v-btn>
+    </footer>
+
+    <v-dialog v-model="clearDialog" max-width="410">
+      <div class="v-card pos-dialog">
+        <div class="pos-dialog__head">
+          <div class="pos-dialog__icon pos-dialog__icon--danger">
+            <v-icon size="19" color="error">mdi-notification-clear-all</v-icon>
+          </div>
+          <span class="pos-dialog__title">Vaciar la venta</span>
+        </div>
+        <div class="pos-dialog__body">
+          <p class="pos-dialog__text mb-0">
+            Se descartarán los <strong>{{ items.length }}</strong>
+            {{ items.length === 1 ? 'renglón capturado' : 'renglones capturados' }}, incluidos los precios
+            que hayas ajustado. Esta acción no se puede deshacer.
+          </p>
+        </div>
+        <div class="pos-dialog__foot">
           <v-spacer />
           <v-btn text @click="clearDialog = false">Cancelar</v-btn>
           <v-btn color="error" depressed @click="clear">Vaciar</v-btn>
-        </v-card-actions>
-      </v-card>
+        </div>
+      </div>
     </v-dialog>
 
-    <v-dialog v-model="receipt.open" max-width="420">
-      <v-card v-if="receipt.sale">
-        <v-card-title class="success white--text py-3">
-          <v-icon left dark>mdi-check-circle</v-icon>
-          Venta registrada
-        </v-card-title>
-        <v-card-text class="pt-5">
-          <div class="d-flex justify-space-between mb-2">
-            <span class="grey--text">Folio</span>
-            <strong>{{ receipt.sale.folio }}</strong>
+    <v-dialog v-model="receipt.open" max-width="400">
+      <div v-if="receipt.sale" class="v-card pos-dialog">
+        <div class="pos-dialog__head">
+          <div class="pos-dialog__icon pos-dialog__icon--success">
+            <v-icon size="20" color="success">mdi-check-bold</v-icon>
           </div>
-          <div class="d-flex justify-space-between mb-2">
-            <span class="grey--text">Artículos</span>
+          <span class="pos-dialog__title">Venta registrada</span>
+        </div>
+        <div class="pos-dialog__body">
+          <div class="pos-receipt__row">
+            <span>Folio</span>
+            <strong class="pos-receipt__folio">{{ receipt.sale.folio }}</strong>
+          </div>
+          <div class="pos-receipt__row">
+            <span>Artículos</span>
             <strong>{{ receipt.sale.itemCount }}</strong>
           </div>
-          <v-divider class="my-3" />
-          <div class="d-flex justify-space-between">
-            <span class="text-h6">Total</span>
-            <span class="text-h5 font-weight-bold primary--text">
-              {{ formatCurrency(receipt.sale.total) }}
-            </span>
+          <div class="pos-receipt__total">
+            <span class="pos-total__label" style="color: var(--pos-text-muted)">Total cobrado</span>
+            <span class="pos-receipt__amount">{{ formatCurrency(receipt.sale.total) }}</span>
           </div>
-        </v-card-text>
-        <v-card-actions>
+        </div>
+        <div class="pos-dialog__foot">
           <v-spacer />
-          <v-btn color="primary" depressed @click="receipt.open = false">Nueva venta</v-btn>
-        </v-card-actions>
-      </v-card>
+          <v-btn depressed class="pos-btn-primary" @click="receipt.open = false">
+            <v-icon left size="17">mdi-cart-plus</v-icon>
+            Nueva venta
+          </v-btn>
+        </div>
+      </div>
     </v-dialog>
-  </v-card>
+  </div>
 </template>
 
 <script>
@@ -177,10 +217,25 @@ export default {
     canSave() {
       return this.items.length > 0 && !this.hasInvalidPrice && !this.saving;
     },
+
+    editedCount() {
+      return this.items.filter((item) => this.isEdited(item)).length;
+    },
   },
 
   methods: {
     formatCurrency,
+
+    /**
+     * Un renglón cuyo precio difiere del de catálogo. Se señala con color,
+     * franja lateral y etiqueta a la vez: confundir el precio de la venta con
+     * el del catálogo cuesta dinero, y el color por sí solo no es accesible.
+     */
+    isEdited(item) {
+      const actual = toCents(item.unitPrice);
+      const original = toCents(item.catalogPrice);
+      return actual !== null && original !== null && actual !== original;
+    },
 
     lineTotal(item) {
       return fromCents(lineTotalCents(item.unitPrice, item.quantity));
@@ -206,6 +261,9 @@ export default {
           name: product.name,
           barcode: product.barcode,
           unitPrice: product.price,
+          // Se conserva el precio de catálogo para poder señalar después si el
+          // cajero lo ajustó, y mostrar cuál era.
+          catalogPrice: product.price,
           quantity: 1,
           priceError: '',
         });
@@ -273,14 +331,79 @@ export default {
 </script>
 
 <style scoped>
-.sale-items {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  min-height: 240px;
-  max-height: calc(100vh - 380px);
+.pos-count-strong {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pos-primary);
+  background: var(--pos-primary-soft);
+  border-radius: 999px;
+  padding: 2px 10px;
 }
 
-.price-input {
-  max-width: 120px;
+.pos-line__main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pos-line__sub {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 3px;
+}
+
+.pos-line__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.pos-line__x {
+  color: var(--pos-text-faint);
+  font-size: 0.875rem;
+}
+
+.pos-total__flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--pos-accent);
+}
+
+.pos-actions {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px 14px;
+  background: var(--pos-surface);
+  border-top: 1px solid var(--pos-border);
+}
+
+.pos-btn-clear {
+  flex: 0 0 auto;
+  height: 50px !important;
+  color: var(--pos-text-muted) !important;
+}
+
+/* `block` de Vuetify aplica ancho 100% del contenedor sin descontar el botón
+   hermano, lo que desbordaba el panel. Con flex ocupa el espacio restante. */
+.pos-actions .pos-btn-save {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pos-kbd--on-primary {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.pos-dialog__text {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--pos-text);
 }
 </style>

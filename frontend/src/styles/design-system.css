@@ -1,0 +1,641 @@
+/* =============================================================================
+   Innova POS — Sistema de diseño
+   Dirección visual: "Terminal de trabajo".
+   No un panel de administración genérico: un instrumento de trabajo. Contraste
+   alto, geometría firme, cero decoración. Cada color tiene un solo significado.
+   ============================================================================= */
+
+/* --- Tipografía -----------------------------------------------------------
+   Inter auto-hospedada. Roboto por defecto es lo que hace que una interfaz
+   Vuetify se reconozca al instante como plantilla. Se cargan solo los pesos
+   que se usan realmente. */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
+/* =============================================================================
+   TOKENS
+   ============================================================================= */
+
+.theme--light.v-application {
+  --pos-bg: #eceff4;
+  --pos-surface: #ffffff;
+  --pos-surface-sunken: #f4f6f9;
+  --pos-border: #dde2ea;
+  --pos-border-strong: #c3cbd8;
+
+  --pos-ink: #0b1220; /* Barra superior y losa del total */
+  --pos-on-ink: #f2f5fa;
+  --pos-on-ink-muted: #8f9bb0;
+
+  --pos-text: #131c2b;
+  --pos-text-muted: #5c6879;
+  --pos-text-faint: #8b96a8;
+
+  --pos-primary: #0f766e;
+  --pos-primary-soft: #e5f4f2;
+  --pos-accent: #b45309; /* Reservado: precio editado en la venta */
+  --pos-accent-soft: #fdf1e3;
+  --pos-danger: #b3261e;
+  --pos-danger-soft: #fdecea;
+  --pos-success: #15803d;
+
+  --pos-shadow: 0 1px 2px rgba(11, 18, 32, 0.06), 0 4px 12px rgba(11, 18, 32, 0.05);
+  --pos-shadow-lift: 0 8px 28px rgba(11, 18, 32, 0.14);
+}
+
+.theme--dark.v-application {
+  --pos-bg: #080b11;
+  --pos-surface: #131924;
+  --pos-surface-sunken: #0e131c;
+  --pos-border: #232c3a;
+  --pos-border-strong: #35415380;
+
+  --pos-ink: #05080d;
+  --pos-on-ink: #e8eef7;
+  --pos-on-ink-muted: #7c8899;
+
+  --pos-text: #e8eef7;
+  --pos-text-muted: #97a3b6;
+  --pos-text-faint: #6b7688;
+
+  --pos-primary: #2dd4bf;
+  --pos-primary-soft: #0f2b2a;
+  --pos-accent: #f0a44a;
+  --pos-accent-soft: #2e2113;
+  --pos-danger: #f2685c;
+  --pos-danger-soft: #2c1614;
+  --pos-success: #4ade80;
+
+  --pos-shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.4);
+  --pos-shadow-lift: 0 10px 34px rgba(0, 0, 0, 0.6);
+}
+
+/* Escala de espaciado y radios, constantes entre temas. */
+.v-application {
+  --pos-r-sm: 6px;
+  --pos-r-md: 10px;
+  --pos-r-lg: 14px;
+}
+
+/* =============================================================================
+   BASE
+   ============================================================================= */
+
+.v-application {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  background: var(--pos-bg) !important;
+  color: var(--pos-text);
+  /* Cifras de ancho fijo: sin esto los precios bailan de fila en fila y la
+     columna deja de leerse como columna. */
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1, 'cv05' 1;
+  letter-spacing: -0.011em;
+}
+
+.v-application .headline,
+.v-application .text-h1,
+.v-application .text-h2,
+.v-application .text-h3,
+.v-application .text-h4,
+.v-application .text-h5,
+.v-application .text-h6 {
+  font-family: 'Inter', sans-serif !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 600;
+}
+
+/* Foco visible y consistente: el flujo principal es por teclado, así que
+   nunca debe perderse de vista dónde está el cursor. */
+.v-application *:focus-visible {
+  outline: 2px solid var(--pos-primary);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* =============================================================================
+   ESTRUCTURA
+   ============================================================================= */
+
+.pos-appbar {
+  background: var(--pos-ink) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pos-brand {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  letter-spacing: -0.02em;
+  color: var(--pos-on-ink);
+}
+
+.pos-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  background: var(--pos-primary);
+  color: #fff;
+}
+
+/* Indicador de estado de la API: nunca comunica solo con color —lleva punto,
+   texto e icono— para que sea legible con daltonismo. */
+.pos-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 11px 4px 9px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--pos-on-ink-muted);
+}
+.pos-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pos-status--online {
+  color: #4ade80;
+}
+.pos-status--offline {
+  color: #f2685c;
+  border-color: rgba(242, 104, 92, 0.4);
+  background: rgba(242, 104, 92, 0.1);
+}
+
+/* Panel: la unidad estructural de la pantalla. */
+.pos-panel {
+  background: var(--pos-surface) !important;
+  border: 1px solid var(--pos-border) !important;
+  border-radius: var(--pos-r-lg) !important;
+  box-shadow: var(--pos-shadow) !important;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.pos-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--pos-border);
+}
+
+.pos-panel__title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pos-text-muted);
+}
+
+.pos-panel__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 220px;
+}
+
+/* =============================================================================
+   FILAS
+   ============================================================================= */
+
+.pos-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--pos-border);
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.pos-row:last-child {
+  border-bottom: 0;
+}
+.pos-row:hover {
+  background: var(--pos-surface-sunken);
+}
+.pos-row__main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.pos-row__name {
+  font-weight: 550;
+  font-size: 0.9375rem;
+  color: var(--pos-text);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pos-row__meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 0.78125rem;
+  color: var(--pos-text-faint);
+}
+.pos-row__price {
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--pos-text);
+  white-space: nowrap;
+}
+.pos-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+
+/* El código de barras es un dato de máquina: monoespaciado lo delata como tal
+   y facilita comparar dígito a dígito. */
+.pos-barcode {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--pos-text-faint);
+}
+
+/* =============================================================================
+   LOSA DEL TOTAL
+   El único elemento de la pantalla con este tratamiento. Sin competencia
+   visual, la mirada cae aquí: es la cifra que el cajero dice en voz alta.
+   ============================================================================= */
+
+.pos-total {
+  background: var(--pos-ink);
+  padding: 16px 20px 18px;
+}
+
+.pos-total__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pos-on-ink-muted);
+}
+
+.pos-total__amount {
+  font-size: 2.875rem;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--pos-on-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-total__currency {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--pos-on-ink-muted);
+  margin-right: 3px;
+  vertical-align: 0.35em;
+}
+
+@media (max-width: 1280px) {
+  .pos-total__amount {
+    font-size: 2.375rem;
+  }
+}
+
+/* =============================================================================
+   RENGLONES DE LA VENTA
+   ============================================================================= */
+
+.pos-line {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--pos-border);
+  border-left: 3px solid transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.pos-line:last-child {
+  border-bottom: 0;
+}
+
+/* Precio ajustado dentro de la venta. Se distingue del precio de catálogo con
+   tres señales a la vez —color, franja lateral y etiqueta— porque confundir
+   ambos cuesta dinero, y porque el color por sí solo no es accesible. */
+.pos-line--edited {
+  border-left-color: var(--pos-accent);
+  background: var(--pos-accent-soft);
+}
+
+.pos-line__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--pos-accent);
+}
+
+.pos-line__total {
+  font-size: 1.0625rem;
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--pos-text);
+}
+
+/* Control de cantidad: pieza única en lugar de botones sueltos, para que se
+   lea como un solo control y no se pulse por error el de al lado. */
+.pos-qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: var(--pos-r-sm);
+  overflow: hidden;
+  background: var(--pos-surface);
+}
+.pos-qty__btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--pos-text-muted);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pos-qty__btn:hover:not(:disabled) {
+  background: var(--pos-surface-sunken);
+  color: var(--pos-text);
+}
+.pos-qty__btn:disabled {
+  opacity: 0.32;
+  cursor: not-allowed;
+}
+.pos-qty__value {
+  min-width: 30px;
+  text-align: center;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--pos-text);
+}
+
+/* Campo de precio editable dentro del renglón. */
+.pos-price-field {
+  max-width: 116px;
+}
+.pos-price-field .v-input__slot {
+  min-height: 34px !important;
+  border-radius: var(--pos-r-sm) !important;
+}
+.pos-price-field input {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-align: right;
+}
+
+/* =============================================================================
+   ESTADOS VACÍOS
+   No son huecos: dicen qué hacer a continuación.
+   ============================================================================= */
+
+.pos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 28px;
+  min-height: 240px;
+}
+.pos-empty__icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: var(--pos-surface-sunken);
+  border: 1px solid var(--pos-border);
+  margin-bottom: 14px;
+}
+.pos-empty__title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--pos-text);
+}
+.pos-empty__hint {
+  font-size: 0.8125rem;
+  color: var(--pos-text-faint);
+  margin-top: 5px;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+/* =============================================================================
+   BÚSQUEDA Y ATAJOS
+   ============================================================================= */
+
+.pos-search .v-input__slot {
+  border-radius: var(--pos-r-md) !important;
+  min-height: 46px !important;
+  background: var(--pos-surface-sunken) !important;
+}
+.pos-search input {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+/* Tecla física. El flujo principal es de teclado; mostrarlo lo enseña sin
+   necesidad de manual. */
+.pos-kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--pos-border-strong);
+  border-bottom-width: 2px;
+  background: var(--pos-surface);
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--pos-text-muted);
+  line-height: 1.5;
+}
+
+.pos-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--pos-text-faint);
+  padding: 8px 16px 10px;
+}
+
+/* =============================================================================
+   BOTONES
+   ============================================================================= */
+
+.v-application .v-btn {
+  text-transform: none !important;
+  letter-spacing: -0.005em !important;
+  font-weight: 600 !important;
+  border-radius: var(--pos-r-sm) !important;
+}
+
+.pos-btn-primary {
+  background: var(--pos-primary) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+/* Acción principal de la pantalla: alta de la venta. Necesita peso propio y
+   un área táctil holgada —se pulsa cientos de veces al día—. */
+.pos-btn-save {
+  height: 50px !important;
+  font-size: 0.9375rem !important;
+}
+
+.v-application .v-btn--icon {
+  border-radius: var(--pos-r-sm) !important;
+}
+
+/* =============================================================================
+   DIÁLOGOS
+   ============================================================================= */
+
+/* El fondo se declara explícitamente: estos diálogos usan `div.v-card` en vez
+   del componente <v-card>, así que Vuetify no les aplica las clases de tema que
+   lo pintan y quedarían transparentes sobre el contenido de la pantalla. */
+.pos-dialog {
+  background: var(--pos-surface) !important;
+  color: var(--pos-text) !important;
+  border-radius: var(--pos-r-lg) !important;
+  box-shadow: var(--pos-shadow-lift) !important;
+  overflow: hidden;
+}
+.pos-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--pos-border);
+}
+.pos-dialog__title {
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--pos-text);
+}
+.pos-dialog__body {
+  padding: 20px;
+}
+.pos-dialog__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--pos-border);
+  background: var(--pos-surface-sunken);
+}
+
+.pos-dialog__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.pos-dialog__icon--primary {
+  background: var(--pos-primary-soft);
+  color: var(--pos-primary);
+}
+.pos-dialog__icon--danger {
+  background: var(--pos-danger-soft);
+  color: var(--pos-danger);
+}
+.pos-dialog__icon--success {
+  background: var(--pos-primary-soft);
+  color: var(--pos-success);
+}
+
+/* =============================================================================
+   COMPROBANTE DE VENTA REGISTRADA
+   ============================================================================= */
+
+.pos-receipt__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 0;
+  font-size: 0.875rem;
+  color: var(--pos-text-muted);
+}
+.pos-receipt__row strong {
+  color: var(--pos-text);
+  font-weight: 650;
+}
+.pos-receipt__total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--pos-border-strong);
+}
+.pos-receipt__amount {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--pos-primary);
+}
+.pos-receipt__folio {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+/* =============================================================================
+   VARIOS
+   ============================================================================= */
+
+.pos-scroll::-webkit-scrollbar {
+  width: 9px;
+}
+.pos-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pos-scroll::-webkit-scrollbar-thumb {
+  background: var(--pos-border-strong);
+  border-radius: 5px;
+  border: 2px solid var(--pos-surface);
+}
+
+.v-application .v-alert {
+  border-radius: var(--pos-r-md) !important;
+  font-size: 0.8125rem;
+}
+
+.v-application .theme--light.v-label,
+.v-application .theme--dark.v-label {
+  font-size: 0.9375rem;
+}
+
+/* Áreas táctiles mínimas de 44px en tablet: eliminar un renglón por accidente
+   en plena venta es inaceptable. */
+@media (pointer: coarse) {
+  .pos-row__actions .v-btn--icon,
+  .pos-qty__btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-application * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

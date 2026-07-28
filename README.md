@@ -48,6 +48,17 @@ una venta ya registrada.
 
 ---
 
+## Interfaz
+
+![Innova POS](docs/screenshots/pos-claro.jpeg)
+
+Dirección visual **"Terminal de trabajo"**: el total ocupa una losa oscura sin competencia
+visual, el ámbar queda reservado para señalar precios ajustados dentro de la venta, y el
+flujo completo se opera con teclado (`F2` buscar · `Enter` agregar · `F9` guardar). Incluye
+modo oscuro. El detalle de las decisiones está en **[`docs/DESIGN.md`](docs/DESIGN.md)**.
+
+---
+
 ## Stack
 
 | Capa | Tecnología |

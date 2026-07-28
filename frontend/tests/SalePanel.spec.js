@@ -213,4 +213,69 @@ describe('SalePanel', () => {
     expect(wrapper.vm.totalAmount).toBe('0.00');
     wrapper.destroy();
   });
+  it('no marca como ajustado un renglón que conserva el precio de catálogo', () => {
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+
+    expect(wrapper.vm.isEdited(wrapper.vm.items[0])).toBe(false);
+    expect(wrapper.vm.editedCount).toBe(0);
+    wrapper.destroy();
+  });
+
+  it('marca el renglón como ajustado al cambiar su precio', () => {
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+
+    wrapper.vm.updatePrice(0, '15.00');
+
+    expect(wrapper.vm.isEdited(wrapper.vm.items[0])).toBe(true);
+    expect(wrapper.vm.editedCount).toBe(1);
+    wrapper.destroy();
+  });
+
+  it('deja de marcarlo si se devuelve al precio original', () => {
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+
+    wrapper.vm.updatePrice(0, '15.00');
+    wrapper.vm.updatePrice(0, '18.50');
+
+    expect(wrapper.vm.isEdited(wrapper.vm.items[0])).toBe(false);
+    wrapper.destroy();
+  });
+
+  it('no marca como ajustado un precio escrito con otro formato pero igual valor', () => {
+    // "18,50" y "18.50" son el mismo importe: señalarlo como ajustado sería
+    // una falsa alarma que resta credibilidad al indicador.
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+
+    wrapper.vm.updatePrice(0, '18,50');
+
+    expect(wrapper.vm.isEdited(wrapper.vm.items[0])).toBe(false);
+    wrapper.destroy();
+  });
+
+  it('cuenta cuántos renglones llevan precio ajustado', () => {
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+    wrapper.vm.addProduct(AGUA);
+
+    wrapper.vm.updatePrice(0, '10.00');
+    expect(wrapper.vm.editedCount).toBe(1);
+
+    wrapper.vm.updatePrice(1, '12.00');
+    expect(wrapper.vm.editedCount).toBe(2);
+    wrapper.destroy();
+  });
+
+  it('conserva el precio de catálogo para poder mostrar cuál era', () => {
+    const wrapper = mountPanel();
+    wrapper.vm.addProduct(COCA);
+
+    wrapper.vm.updatePrice(0, '5.00');
+
+    expect(wrapper.vm.items[0].catalogPrice).toBe('18.50');
+    wrapper.destroy();
+  });
 });

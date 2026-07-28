@@ -26,6 +26,14 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    watch: {
+      // Sondeo en lugar de eventos del sistema de archivos. Cuando el proyecto
+      // vive en una ruta de Windows montada en WSL (/mnt/c), el sistema 9p no
+      // emite eventos inotify y la recarga en caliente deja de funcionar en
+      // silencio: se edita un archivo y el navegador nunca se entera.
+      usePolling: true,
+      interval: 400,
+    },
     // Proxy hacia la API: el navegador solo habla con el origen de Vite, así que
     // en desarrollo no hay CORS de por medio.
     proxy: {
