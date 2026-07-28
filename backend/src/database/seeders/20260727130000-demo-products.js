@@ -1,5 +1,7 @@
 'use strict';
 
+const { withCheckDigit } = require('../../utils/ean13');
+
 /**
  * Catálogo de ejemplo para poder probar la búsqueda y el flujo de venta sin
  * capturar productos a mano.
@@ -10,8 +12,10 @@
  * precio fuera de escala se nota de inmediato y resta credibilidad a cualquier
  * demostración.
  *
- * Los códigos de barras son EAN-13 ficticios con prefijo 741, el que GS1 asigna
- * a El Salvador.
+ * Los códigos son EAN-13 ficticios con prefijo 741, el que GS1 asigna a El
+ * Salvador. Se declara solo el cuerpo de doce dígitos y el verificador se
+ * calcula al sembrar: escrito a mano acaba mal, y un verificador incorrecto
+ * deja el código sin representación gráfica y lo hace ilegible para un lector.
  *
  * Las imágenes son de Unsplash, de uso libre, y se verificaron una a una
  * mirándolas: comprobar solo el código de respuesta confirma que la URL existe,
@@ -19,22 +23,25 @@
  * portada a partir del nombre.
  */
 const PRODUCTS = [
-  // [nombre, código de barras, precio, descripción, imagen]
-  ['Coca-Cola 600 ml', '7410010000015', '0.75', 'Gaseosa de cola, botella de 600 ml', 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=500&q=80'],
-  ['Agua Cristal 1 L', '7410010000022', '0.60', 'Agua purificada, botella de 1 litro', 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&q=80'],
-  ['Boquitas Diana 45 g', '7410010000039', '0.85', 'Papas fritas saladas', 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&q=80'],
-  ['Galletas Diana chocolate', '7410010000046', '1.10', 'Paquete de 90 g', 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=500&q=80'],
-  ['Café Listo 50 g', '7410010000053', '2.85', 'Café soluble salvadoreño', 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=500&q=80'],
-  ['Leche Salud entera 1 L', '7410010000060', '1.25', 'Leche entera pasteurizada', 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80'],
-  ['Pan Bimbo blanco grande', '7410010000077', '2.10', 'Pan de caja blanco, 680 g', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80'],
-  ['Huevos de gallina 12 unidades', '7410010000084', '2.40', 'Cartón de 12 huevos', 'https://images.unsplash.com/photo-1518569656558-1f25e69d93d7?w=500&q=80'],
-  ['Atún Calvo en agua 140 g', '7410010000091', '1.15', 'Lata de atún aleta amarilla', 'https://images.unsplash.com/photo-1611171711912-e3f6b536f532?w=500&q=80'],
-  ['Arroz Sabemás 1 kg', '7410010000107', '1.35', 'Arroz precocido de primera', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80'],
-  ['Frijol rojo de seda 1 lb', '7410010000114', '1.20', 'Frijol rojo seleccionado', null],
-  ['Aceite Capullo 850 ml', '7410010000121', '2.95', 'Aceite vegetal', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80'],
-  ['Azúcar blanca 1 kg', '7410010000138', '1.05', 'Azúcar refinada', 'https://images.unsplash.com/photo-1610725664285-7c57e6eeac3f?w=500&q=80'],
-  ['Papel higiénico Nevax 4 rollos', '7410010000145', '1.95', 'Papel higiénico doble hoja', 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=500&q=80'],
-  ['Jabón de lavar en barra 400 g', '7410010000152', '1.05', 'Jabón de lavandería', 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=500&q=80'],
+  // [nombre, cuerpo del código (12 dígitos), precio, descripción, imagen]
+  // El decimotercer dígito lo calcula el seeder: escribirlo a mano garantiza
+  // equivocarse, y un verificador incorrecto hace que el código no se pueda
+  // representar gráficamente ni leer con un lector físico.
+  ['Coca-Cola 600 ml', '741001000001', '0.75', 'Gaseosa de cola, botella de 600 ml', 'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=500&q=80'],
+  ['Agua Cristal 1 L', '741001000002', '0.60', 'Agua purificada, botella de 1 litro', 'https://images.unsplash.com/photo-1523362628745-0c100150b504?w=500&q=80'],
+  ['Boquitas Diana 45 g', '741001000003', '0.85', 'Papas fritas saladas', 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=500&q=80'],
+  ['Galletas Diana chocolate', '741001000004', '1.10', 'Paquete de 90 g', 'https://images.unsplash.com/photo-1499636136210-6f4ee915583e?w=500&q=80'],
+  ['Café Listo 50 g', '741001000005', '2.85', 'Café soluble salvadoreño', 'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=500&q=80'],
+  ['Leche Salud entera 1 L', '741001000006', '1.25', 'Leche entera pasteurizada', 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=500&q=80'],
+  ['Pan Bimbo blanco grande', '741001000007', '2.10', 'Pan de caja blanco, 680 g', 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=500&q=80'],
+  ['Huevos de gallina 12 unidades', '741001000008', '2.40', 'Cartón de 12 huevos', 'https://images.unsplash.com/photo-1518569656558-1f25e69d93d7?w=500&q=80'],
+  ['Atún Calvo en agua 140 g', '741001000009', '1.15', 'Lata de atún aleta amarilla', 'https://images.unsplash.com/photo-1611171711912-e3f6b536f532?w=500&q=80'],
+  ['Arroz Sabemás 1 kg', '741001000010', '1.35', 'Arroz precocido de primera', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=500&q=80'],
+  ['Frijol rojo de seda 1 lb', '741001000011', '1.20', 'Frijol rojo seleccionado', null],
+  ['Aceite Capullo 850 ml', '741001000012', '2.95', 'Aceite vegetal', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=500&q=80'],
+  ['Azúcar blanca 1 kg', '741001000013', '1.05', 'Azúcar refinada', 'https://images.unsplash.com/photo-1610725664285-7c57e6eeac3f?w=500&q=80'],
+  ['Papel higiénico Nevax 4 rollos', '741001000014', '1.95', 'Papel higiénico doble hoja', 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=500&q=80'],
+  ['Jabón de lavar en barra 400 g', '741001000015', '1.05', 'Jabón de lavandería', 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=500&q=80'],
 ];
 
 /** @type {import('sequelize-cli').Migration} */
@@ -44,9 +51,9 @@ module.exports = {
 
     await queryInterface.bulkInsert(
       'products',
-      PRODUCTS.map(([name, barcode, price, description, imageUrl]) => ({
+      PRODUCTS.map(([name, cuerpo, price, description, imageUrl]) => ({
         name,
-        barcode,
+        barcode: withCheckDigit(cuerpo),
         price,
         description,
         image_url: imageUrl,
@@ -61,7 +68,7 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     await queryInterface.bulkDelete('products', {
-      barcode: { [Sequelize.Op.in]: PRODUCTS.map(([, barcode]) => barcode) },
+      barcode: { [Sequelize.Op.in]: PRODUCTS.map(([, cuerpo]) => withCheckDigit(cuerpo)) },
     });
   },
 };
