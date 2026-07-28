@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getToken, clearToken } from './token';
 
 /**
  * Cliente HTTP único de la aplicación.
@@ -17,6 +18,17 @@ const http = axios.create({
  * Normaliza cualquier fallo (HTTP, red o timeout) a un objeto con la misma
  * forma, para que los componentes nunca tengan que inspeccionar `error.response`.
  */
+/**
+ * Se avisa hacia fuera cuando la sesión deja de ser válida, para que la
+ * aplicación limpie su estado y lleve al usuario al inicio de sesión. Se usa un
+ * callback en lugar de importar el router aquí para no acoplar la capa de red
+ * con la de navegación.
+ */
+let onSessionExpired = null;
+export function setSessionExpiredHandler(handler) {
+  onSessionExpired = handler;
+}
+
 export class ApiRequestError extends Error {
   constructor(message, { status = null, details = null, cause = null, offline = false } = {}) {
     super(message);
@@ -40,6 +52,13 @@ export class ApiRequestError extends Error {
 
 const SIN_CONEXION = 'No se pudo conectar con el servidor. Verifica que la API esté ejecutándose.';
 
+// Cada petición viaja firmada con el token de la sesión en curso.
+http.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 http.interceptors.response.use(
   // La API envuelve todo en { success, data }; devolvemos `data` directamente
   // para que los servicios no tengan que desempaquetar dos niveles.
@@ -48,6 +67,13 @@ http.interceptors.response.use(
     const { response } = error;
     const payload = response && response.data;
     const apiError = payload && typeof payload === 'object' ? payload.error : null;
+
+    // 401 significa que la sesión ya no sirve: caducó, la cuenta se desactivó
+    // o el token es inválido. Se descarta y se avisa a la aplicación.
+    if (response && response.status === 401) {
+      clearToken();
+      if (onSessionExpired) onSessionExpired(apiError ? apiError.message : 'Tu sesión expiró');
+    }
 
     // Error de negocio: la API respondió con su formato conocido.
     if (apiError) {

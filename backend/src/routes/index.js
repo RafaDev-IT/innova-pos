@@ -1,13 +1,15 @@
 const { Router } = require('express');
 
+const authRoutes = require('./authRoutes');
+const userRoutes = require('./userRoutes');
 const productRoutes = require('./productRoutes');
 const saleRoutes = require('./saleRoutes');
 
 const router = Router();
 
 /**
- * Sonda de salud. Sirve para el healthcheck de despliegue y para que el
- * frontend confirme que la API está arriba antes de mostrar errores de red.
+ * Sonda de salud. Deliberadamente pública y sin datos sensibles: el frontend la
+ * consulta antes de iniciar sesión para saber si la API responde.
  */
 router.get('/health', (_req, res) => {
   res.json({
@@ -20,6 +22,8 @@ router.get('/health', (_req, res) => {
   });
 });
 
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
 router.use('/products', productRoutes);
 router.use('/sales', saleRoutes);
 

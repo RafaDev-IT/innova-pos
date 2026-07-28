@@ -22,8 +22,18 @@
       "plugins": ["jest"],
       "env": { "jest": true },
       "extends": ["plugin:jest/recommended"],
+      "globals": {
+        "resetDatabase": "readonly",
+        "createUser": "readonly",
+        "apiAs": "readonly",
+        "adminUser": "writable",
+        "adminToken": "writable"
+      },
       "rules": {
-        "jest/expect-expect": ["warn", { "assertFunctionNames": ["expect", "request.**.expect"] }]
+        "jest/expect-expect": [
+          "warn",
+          { "assertFunctionNames": ["expect", "request.**.expect", "apiAs.**.expect", "apiAs().**.expect"] }
+        ]
       }
     }
   ],

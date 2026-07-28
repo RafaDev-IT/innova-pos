@@ -39,6 +39,17 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: DataTypes.NOW,
       },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      // Copia del nombre del cajero al momento de la venta, por el mismo motivo
+      // que en sale_items: el histórico debe seguir siendo legible aunque el
+      // usuario cambie de nombre o se dé de baja.
+      userName: {
+        type: DataTypes.STRING(120),
+        allowNull: true,
+      },
     },
     {
       tableName: 'sales',
@@ -51,6 +62,7 @@ module.exports = (sequelize, DataTypes) => {
       as: 'items',
       onDelete: 'CASCADE',
     });
+    Sale.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
   };
 
   Sale.prototype.toJSON = function toJSON() {
@@ -63,6 +75,8 @@ module.exports = (sequelize, DataTypes) => {
       status: values.status,
       itemCount: values.itemCount,
       soldAt: values.soldAt,
+      userId: values.userId ?? null,
+      userName: values.userName ?? null,
       createdAt: values.createdAt,
       // `items` solo viaja cuando la consulta lo incluye explícitamente.
       ...(values.items ? { items: values.items } : {}),

@@ -17,6 +17,16 @@ class ApiError extends Error {
     return new ApiError(400, message, details);
   }
 
+  /** 401: no hay sesión, o la que hay no es válida. */
+  static unauthorized(message = 'Necesitas iniciar sesión', details) {
+    return new ApiError(401, message, details);
+  }
+
+  /** 403: hay sesión, pero no alcanza para esta acción. */
+  static forbidden(message = 'No tienes permiso para realizar esta acción', details) {
+    return new ApiError(403, message, details);
+  }
+
   static notFound(message = 'Recurso no encontrado', details) {
     return new ApiError(404, message, details);
   }
