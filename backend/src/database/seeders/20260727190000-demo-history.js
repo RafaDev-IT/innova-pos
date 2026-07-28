@@ -1,5 +1,7 @@
 'use strict';
 
+const { assertNotProduction } = require('../seedGuard');
+
 /**
  * Historial simulado: 30 días de ventas con su bitácora.
  *
@@ -61,6 +63,8 @@ const aImporte = (cents) => (cents / 100).toFixed(2);
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
+    assertNotProduction('20260727190000-demo-history.js');
+
     const azar = crearAzar(SEMILLA);
 
     const [productos] = await queryInterface.sequelize.query(

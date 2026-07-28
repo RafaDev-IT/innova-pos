@@ -1,5 +1,7 @@
 'use strict';
 
+const { assertNotProduction } = require('../seedGuard');
+
 const { withCheckDigit } = require('../../utils/ean13');
 
 /**
@@ -47,6 +49,8 @@ const PRODUCTS = [
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
+    assertNotProduction('20260727130000-demo-products.js');
+
     const now = new Date();
 
     await queryInterface.bulkInsert(

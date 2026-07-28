@@ -1,5 +1,7 @@
 'use strict';
 
+const { assertNotProduction } = require('../seedGuard');
+
 const bcrypt = require('bcryptjs');
 const { ROLES } = require('../../config/roles');
 
@@ -20,6 +22,8 @@ const USERS = [
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
+    assertNotProduction('20260727160000-demo-users.js');
+
     const now = new Date();
 
     const rows = await Promise.all(
