@@ -50,3 +50,44 @@ export function isValidPrice(value) {
   const cents = toCents(value);
   return cents !== null && cents >= 0;
 }
+
+/**
+ * Limpia lo que el usuario teclea en un campo de importe.
+ *
+ * Filtrar mientras se escribe es preferible a corregir al enviar: el campo
+ * nunca llega a mostrar algo que el sistema vaya a rechazar, y quien teclea
+ * un tercer decimal ve que simplemente no entra, en vez de descubrir al
+ * guardar que su precio cambió.
+ *
+ * Se conserva el punto o la coma final mientras se escribe ("12." es un estado
+ * intermedio legítimo), y se admite la coma decimal del teclado latino.
+ */
+export function sanitizeAmountInput(raw, decimales = 2) {
+  let texto = String(raw === null || raw === undefined ? '' : raw);
+
+  // Solo dígitos y separadores decimales.
+  texto = texto.replace(/[^\d.,]/g, '');
+
+  // La coma se normaliza a punto, que es lo que espera la API.
+  texto = texto.replace(/,/g, '.');
+
+  // Un único separador: el primero manda, los demás se descartan.
+  const partes = texto.split('.');
+  if (partes.length > 2) {
+    texto = `${partes.shift()}.${partes.join('')}`;
+  }
+
+  const [entera, decimal] = texto.split('.');
+  if (decimal === undefined) return entera;
+
+  return `${entera}.${decimal.slice(0, decimales)}`;
+}
+
+/** Comprueba que un importe no traiga más decimales de los admitidos. */
+export function hasValidPrecision(value, decimales = 2) {
+  const parte = String(value === null || value === undefined ? '' : value)
+    .trim()
+    .replace(',', '.')
+    .split('.')[1];
+  return parte === undefined || parte.length <= decimales;
+}
