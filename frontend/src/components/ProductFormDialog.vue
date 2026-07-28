@@ -141,9 +141,13 @@ export default {
 
   watch: {
     // Cada apertura parte de un estado limpio: sin residuos de errores ni de
-    // valores del producto editado anteriormente.
-    value(opened) {
-      if (opened) this.reset();
+    // valores del producto editado anteriormente. `immediate` cubre el caso de
+    // montar el diálogo ya abierto, donde el watcher no llegaría a dispararse.
+    value: {
+      immediate: true,
+      handler(opened) {
+        if (opened) this.reset();
+      },
     },
   },
 

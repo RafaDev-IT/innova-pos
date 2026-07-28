@@ -81,6 +81,19 @@ describe('ProductFormDialog', () => {
     wrapper.destroy();
   });
 
+  it('llama a update en lugar de create cuando recibe un producto', async () => {
+    const product = { id: 5, name: 'Coca', barcode: '750', price: '18.50', description: null };
+    productService.update.mockResolvedValue({ ...product, price: '20.00' });
+    const wrapper = mountDialog({ product });
+
+    wrapper.vm.form.price = '20';
+    await wrapper.vm.$nextTick();
+    await wrapper.vm.submit();
+
+    expect(productService.update).toHaveBeenCalledWith(5, expect.objectContaining({ price: '20.00' }));
+    expect(productService.create).not.toHaveBeenCalled();
+    wrapper.destroy();
+  });
 
   it('muestra los errores de validación del servidor en su campo', async () => {
     const error = new Error('conflicto');
