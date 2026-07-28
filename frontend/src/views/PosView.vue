@@ -110,7 +110,12 @@ export default {
 
 @media (max-width: 959px) {
   .pos-layout {
-    grid-template-columns: 1fr;
+    /* `1fr` equivale a `minmax(auto, 1fr)`, y un mínimo automático deja que el
+       contenido empuje la columna más allá del ancho disponible: es el
+       desbordamiento clásico de las rejillas. `minmax(0, 1fr)` sí permite
+       encoger, que es lo que hace falta para que una tabla ancha se desplace
+       dentro de su contenedor en lugar de estirar la página. */
+    grid-template-columns: minmax(0, 1fr);
     height: auto;
   }
   .pos-layout__main,

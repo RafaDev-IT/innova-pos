@@ -84,21 +84,23 @@
               <span class="chip-soft">{{ data.byProduct.length }}</span>
             </header>
             <div class="px-4 pb-3 tabla-scroll scroll">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Producto</th><th class="num">Unidades</th><th class="num">Total</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="p in data.byProduct" :key="p.productId || p.name">
-                    <td>
-                      {{ p.name }}
-                      <div class="code">{{ p.barcode }}</div>
-                    </td>
-                    <td class="num">{{ p.quantity }}</td>
-                    <td class="num">{{ formatCurrency(p.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Producto</th><th class="num">Unidades</th><th class="num">Total</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="p in data.byProduct" :key="p.productId || p.name">
+                      <td>
+                        {{ p.name }}
+                        <div class="code">{{ p.barcode }}</div>
+                      </td>
+                      <td class="num">{{ p.quantity }}</td>
+                      <td class="num">{{ formatCurrency(p.total) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -109,19 +111,21 @@
               <div class="panel__title">Desempeño por cajero</div>
             </header>
             <div class="px-4 pb-3">
-              <table class="data-table">
-                <thead>
-                  <tr><th>Cajero</th><th class="num">Tickets</th><th class="num">Promedio</th><th class="num">Total</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="u in data.byUser" :key="u.userId || u.name">
-                    <td>{{ u.name }}</td>
-                    <td class="num">{{ u.ticketCount }}</td>
-                    <td class="num">{{ formatCurrency(u.averageTicket) }}</td>
-                    <td class="num">{{ formatCurrency(u.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Cajero</th><th class="num">Tickets</th><th class="num">Promedio</th><th class="num">Total</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="u in data.byUser" :key="u.userId || u.name">
+                      <td>{{ u.name }}</td>
+                      <td class="num">{{ u.ticketCount }}</td>
+                      <td class="num">{{ formatCurrency(u.averageTicket) }}</td>
+                      <td class="num">{{ formatCurrency(u.total) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -139,22 +143,24 @@
               </span>
             </header>
             <div class="px-4 pb-3 tabla-scroll scroll">
-              <table v-if="data.adjustedPrices.length" class="data-table">
-                <thead>
-                  <tr><th>Folio</th><th>Producto</th><th class="num">Cobrado</th><th class="num">Catálogo</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(a, i) in data.adjustedPrices" :key="`${a.folio}-${i}`">
-                    <td>
-                      <span class="code">{{ a.folio }}</span>
-                      <div class="text--secondary" style="font-size: 0.6875rem">{{ a.userName }}</div>
-                    </td>
-                    <td>{{ a.productName }}</td>
-                    <td class="num">{{ formatCurrency(a.unitPrice) }}</td>
-                    <td class="num text--secondary">{{ formatCurrency(a.catalogPrice) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-if="data.adjustedPrices.length" class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Folio</th><th>Producto</th><th class="num">Cobrado</th><th class="num">Catálogo</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(a, i) in data.adjustedPrices" :key="`${a.folio}-${i}`">
+                      <td>
+                        <span class="code">{{ a.folio }}</span>
+                        <div class="text--secondary" style="font-size: 0.6875rem">{{ a.userName }}</div>
+                      </td>
+                      <td>{{ a.productName }}</td>
+                      <td class="num">{{ formatCurrency(a.unitPrice) }}</td>
+                      <td class="num text--secondary">{{ formatCurrency(a.catalogPrice) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
               <div v-else class="empty py-6">
                 <div class="empty__hint">Ningún precio se ajustó en el período.</div>
               </div>
@@ -278,6 +284,21 @@ export default {
 .filters__range {
   display: flex;
   align-items: center;
+  /* Sin esto el contenedor se niega a bajar del ancho de sus campos y arrastra
+     la fila entera fuera de la pantalla. */
+  min-width: 0;
+}
+
+/* Móvil: los atajos de período y el rango de fechas ocupan cada uno su propia
+   línea. Apretados en una sola fila quedan ilegibles antes que desbordar. */
+@media (max-width: 599px) {
+  .filters__presets {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+  .filters__range {
+    width: 100%;
+  }
 }
 
 .preset {
@@ -318,7 +339,12 @@ export default {
 
 @media (max-width: 1279px) {
   .grid-two {
-    grid-template-columns: 1fr;
+    /* `1fr` equivale a `minmax(auto, 1fr)`, y un mínimo automático deja que el
+       contenido empuje la columna más allá del ancho disponible: es el
+       desbordamiento clásico de las rejillas. `minmax(0, 1fr)` sí permite
+       encoger, que es lo que hace falta para que una tabla ancha se desplace
+       dentro de su contenedor en lugar de estirar la página. */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

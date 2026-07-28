@@ -15,6 +15,7 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 - [Puesta en marcha](#puesta-en-marcha)
 - [Datos iniciales](#datos-iniciales)
 - [Despliegue](#despliegue)
+- [Aplicación instalable y diseño adaptable](#aplicación-instalable-y-diseño-adaptable)
 - [Modelo de datos](#modelo-de-datos)
 - [API](#api)
 - [Pruebas](#pruebas)
@@ -266,6 +267,84 @@ Firebase publica el mismo sitio en dos dominios (`.web.app` y
 `.firebaseapp.com`), así que `CORS_ORIGIN` admite lista separada por comas y
 deben ir los dos: declarar solo uno deja el otro rechazado por CORS, con un
 error que en el navegador se lee como "la API no responde".
+
+---
+
+## Aplicación instalable y diseño adaptable
+
+### PWA
+
+La aplicación se puede instalar como una aplicación más del dispositivo, sin
+pasar por ninguna tienda. En Chrome y Edge aparece un icono de instalación en la
+barra de direcciones; en iOS, *Compartir → Añadir a pantalla de inicio*.
+
+Instalada abre a pantalla completa, sin barra del navegador, con su icono y su
+nombre propios.
+
+| Pieza | Dónde |
+|---|---|
+| Manifiesto | `public/manifest.webmanifest` |
+| Service worker | `public/sw.js` |
+| Iconos | `public/icons/` (192, 256, 384, 512 y dos *maskable*) |
+| Registro | `src/registerServiceWorker.js` |
+
+**Sin conexión** la aplicación sigue abriendo: el armazón y los recursos
+compilados se sirven de la copia local, la sesión iniciada se conserva y la
+barra superior avisa *Sin conexión*.
+
+Lo que **no** hace, deliberadamente: no guarda ventas para enviarlas después.
+En un punto de venta, una venta "registrada" que en realidad se quedó en el
+navegador es dinero perdido y descuadre de caja. Las escrituras van siempre a la
+red o fallan de forma visible. Las lecturas de la API van primero a la red y
+solo recurren a la copia si no hay conexión.
+
+El service worker tampoco se activa en caliente: una versión nueva espera a que
+se cierren las pestañas abiertas. Reemplazar el código a mitad de una venta es
+justamente lo que no debe pasar en una caja.
+
+### Adaptación a pantallas
+
+Comprobado midiendo el desbordamiento horizontal en **11 anchos × 5 pantallas**
+(320, 360, 390, 414, 540, 768, 820, 1024, 1280, 1440 y 1920 px): sin desbordes.
+
+| Rango | Comportamiento |
+|---|---|
+| < 600 px | Menú lateral colapsable, filtros apilados, campos sin ancho mínimo |
+| 600–1279 px | Rejillas de una columna, menú lateral fijo |
+| ≥ 1280 px | Dos columnas en tablero y reportes |
+
+Decisiones que resuelven los fallos más habituales:
+
+- **Las tablas se desplazan dentro de su contenedor** (`.table-scroll`), nunca
+  empujando la página. Si el documento entero se desplaza, la barra lateral y la
+  cabecera se descuadran con él.
+- **Las rejillas usan `minmax(0, 1fr)`** y no `1fr`. `1fr` equivale a
+  `minmax(auto, 1fr)`, y un mínimo automático deja que el contenido estire la
+  columna: es el desbordamiento clásico de CSS Grid.
+- **Los campos llevan 16 px en móvil.** Safari en iOS amplía la página al
+  enfocar un campo más pequeño y luego no la devuelve a su sitio.
+- **Áreas táctiles de 44 px**, el umbral por debajo del cual el dedo falla de
+  forma medible (WCAG 2.5.5).
+- **Márgenes seguros** con `env(safe-area-inset-*)`, para que la barra de gestos
+  de un iPhone no tape el total ni el botón de cobrar.
+
+El foco de teclado es visible en todos los controles (contorno verde de 2 px), y
+las gráficas ofrecen su alternativa en tabla.
+
+### Limitaciones conocidas
+
+- **Sin ventas sin conexión.** Es una decisión, no una carencia: ver arriba.
+- **iOS no admite instalación desde un navegador que no sea Safari**, ni notifica
+  la posibilidad de instalar; hay que usar *Añadir a pantalla de inicio* a mano.
+- **La regla de área táctil combina `pointer: coarse` y ancho de pantalla.** Lo
+  correcto conceptualmente es solo lo primero —importa cómo se apunta, no cuánto
+  mide la pantalla—, pero esa condición no se puede verificar de forma
+  automatizada en un navegador de escritorio, y se prefirió una regla
+  comprobable.
+- **La escala de grises de las gráficas no se ha probado con impresión en
+  blanco y negro.**
+- **El escáner de cámara** usa `BarcodeDetector` cuando existe y recurre a una
+  biblioteca en su defecto; en navegadores muy antiguos no funciona.
 
 ---
 

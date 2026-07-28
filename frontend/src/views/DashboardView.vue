@@ -60,18 +60,20 @@
                    color no llegan. -->
               <details class="dash__table">
                 <summary>Ver los datos en tabla</summary>
-                <table class="data-table mt-2">
-                  <thead>
-                    <tr><th>Hora</th><th class="num">Tickets</th><th class="num">Importe</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="h in horasConVenta" :key="h.hour">
-                      <td>{{ h.label }}</td>
-                      <td class="num">{{ h.tickets }}</td>
-                      <td class="num">{{ formatCurrency(h.total) }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                <div class="table-scroll">
+                  <table class="data-table mt-2">
+                    <thead>
+                      <tr><th>Hora</th><th class="num">Tickets</th><th class="num">Importe</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="h in horasConVenta" :key="h.hour">
+                        <td>{{ h.label }}</td>
+                        <td class="num">{{ h.tickets }}</td>
+                        <td class="num">{{ formatCurrency(h.total) }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </details>
             </div>
           </div>
@@ -126,18 +128,20 @@
               <div class="panel__title">Por cajero</div>
             </header>
             <div class="px-4 pb-3">
-              <table v-if="data.salesByUser.length" class="data-table">
-                <thead>
-                  <tr><th>Cajero</th><th class="num">Tickets</th><th class="num">Total</th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="u in data.salesByUser" :key="u.userId || u.name">
-                    <td>{{ u.name }}</td>
-                    <td class="num">{{ u.ticketCount }}</td>
-                    <td class="num">{{ formatCurrency(u.total) }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div v-if="data.salesByUser.length" class="table-scroll">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Cajero</th><th class="num">Tickets</th><th class="num">Total</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="u in data.salesByUser" :key="u.userId || u.name">
+                      <td>{{ u.name }}</td>
+                      <td class="num">{{ u.ticketCount }}</td>
+                      <td class="num">{{ formatCurrency(u.total) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
               <div v-else class="empty py-6">
                 <div class="empty__hint">Sin ventas registradas hoy.</div>
               </div>
@@ -288,7 +292,12 @@ export default {
 
 @media (max-width: 1279px) {
   .dash__grid-main {
-    grid-template-columns: 1fr;
+    /* `1fr` equivale a `minmax(auto, 1fr)`, y un mínimo automático deja que el
+       contenido empuje la columna más allá del ancho disponible: es el
+       desbordamiento clásico de las rejillas. `minmax(0, 1fr)` sí permite
+       encoger, que es lo que hace falta para que una tabla ancha se desplace
+       dentro de su contenedor en lugar de estirar la página. */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

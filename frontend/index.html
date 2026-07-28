@@ -2,10 +2,34 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="description" content="Punto de venta básico — administración de productos y registro de ventas" />
+    <!-- `viewport-fit=cover` deja que la interfaz llegue al borde en pantallas
+         con muesca; el margen seguro se aplica en CSS con env(safe-area-*). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Punto de venta: catálogo, registro de ventas, historial y corte de caja." />
     <title>Innova POS</title>
+
+    <!-- Color de la barra del navegador, declarado por esquema: en modo oscuro
+         una franja verde clara sobre la interfaz oscura canta demasiado. -->
+    <meta name="theme-color" content="#12a150" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#161b22" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- iOS no lee el manifest: la instalación en la pantalla de inicio se
+         configura con estas etiquetas propias. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Innova POS" />
+
+    <!-- Evita que iOS convierta los números largos de un ticket —códigos de
+         barras, folios— en enlaces de teléfono. -->
+    <meta name="format-detection" content="telephone=no" />
   </head>
   <body>
     <div id="app"></div>
