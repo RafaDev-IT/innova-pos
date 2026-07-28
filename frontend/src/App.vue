@@ -1,10 +1,17 @@
 <template>
   <v-app>
     <v-app-bar app flat height="56" class="pos-appbar">
-      <div class="pos-brand-mark mr-3">
-        <v-icon size="18" color="white">mdi-point-of-sale</v-icon>
+      <!-- El isotipo va sobre una placa clara: el logo original está diseñado
+           para fondos blancos y su trazo gris pizarra desaparecería sobre la
+           barra oscura. Darle su propio soporte respeta los colores de marca
+           en vez de recolorearlos. -->
+      <div class="pos-brand-plate mr-3">
+        <img :src="brandMark" alt="InnovaB" class="pos-brand-plate__img" />
       </div>
-      <span class="pos-brand">Innova POS</span>
+      <div class="d-flex flex-column">
+        <span class="pos-brand">Innova POS</span>
+        <span class="pos-brand-sub">by InnovaB</span>
+      </div>
 
       <v-spacer />
 
@@ -68,6 +75,7 @@ import http from '@/services/http';
 import ProductCatalog from '@/components/ProductCatalog.vue';
 import SalePanel from '@/components/SalePanel.vue';
 import { THEME_STORAGE_KEY } from '@/plugins/vuetify';
+import brandMark from '@/assets/innovab-mark.png';
 
 const HEALTH_INTERVAL_MS = 15000;
 
@@ -77,6 +85,7 @@ export default {
   components: { ProductCatalog, SalePanel },
 
   data: () => ({
+    brandMark,
     apiOnline: false,
     healthTimer: null,
     notification: {
@@ -222,6 +231,33 @@ html {
     height: auto;
     min-height: 0;
   }
+}
+
+.pos-brand-plate {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: #ffffff;
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  flex: 0 0 auto;
+}
+.pos-brand-plate__img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.pos-brand-sub {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pos-on-ink-muted);
+  line-height: 1;
+  margin-top: 1px;
 }
 
 .pos-shortcut-hint {
