@@ -19,6 +19,7 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 - [Modelo de datos](#modelo-de-datos)
 - [API](#api)
 - [Pruebas](#pruebas)
+- [Documentación](#documentación)
 - [Estructura del repositorio](#estructura-del-repositorio)
 - [Comandos disponibles](#comandos-disponibles)
 - [Estrategia de ramas](#estrategia-de-ramas)
@@ -54,12 +55,32 @@ una venta ya registrada.
 
 ## Interfaz
 
-![Innova POS](docs/screenshots/pos-claro.jpeg)
+![Punto de venta](docs/screenshots/punto-de-venta.png)
 
-Dirección visual **"Terminal de trabajo"**: el total ocupa una losa oscura sin competencia
-visual, el ámbar queda reservado para señalar precios ajustados dentro de la venta, y el
-flujo completo se opera con teclado (`F2` buscar · `Enter` agregar · `F9` guardar). Incluye
-modo oscuro. El detalle de las decisiones está en **[`docs/DESIGN.md`](docs/DESIGN.md)**.
+Claro, aireado y minimalista: tarjetas blancas sobre un lienzo gris muy claro,
+radios generosos, sombras casi imperceptibles y verde como único acento. La
+separación se consigue con el contraste entre lienzo y superficie, no con
+líneas.
+
+El catálogo con foto queda a la izquierda y la venta en curso a la derecha. Todo
+el flujo se opera con teclado —`F2` buscar, `Enter` agregar, `F9` cobrar—, porque
+en una caja el ratón sobra. Cada renglón permite ajustar el precio dentro de la
+venta y quitarse; el precio ajustado queda marcado y aparece después en un
+reporte propio, porque es dinero cobrado por debajo del catálogo.
+
+![Inicio de sesión](docs/screenshots/login.png)
+
+Incluye modo oscuro, con paleta propia y no un aclarado automático del tema
+claro. El predeterminado es el claro. El detalle de las decisiones visuales está
+en **[`docs/DESIGN.md`](docs/DESIGN.md)**.
+
+### En cualquier pantalla
+
+![Prueba en múltiples dispositivos](docs/screenshots/prueba-responsive.png)
+
+Probado sobre once dispositivos, desde un Galaxy Fold plegado (280 px) hasta un
+MacBook Pro, y verificado midiendo el desbordamiento horizontal en 11 anchos por
+5 pantallas.
 
 ---
 
@@ -350,6 +371,8 @@ las gráficas ofrecen su alternativa en tabla.
 
 ## Modelo de datos
 
+![Diagrama de la base de datos](docs/screenshots/diagrama-base-datos.png)
+
 ```
 ┌─────────────────────┐         ┌─────────────────────┐         ┌─────────────────────┐
 │      products       │         │     sale_items      │         │        sales        │
@@ -418,6 +441,17 @@ Entre lo cubierto: cálculo de totales en el servidor, prevalencia del precio ed
 el de catálogo, ausencia de error de punto flotante al sumar cien renglones, folios
 correlativos, reversión completa de la transacción ante un fallo al insertar el detalle, y
 que una venta ya registrada no se altere al cambiar o dar de baja el producto.
+
+---
+
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`backend/README.md`](backend/README.md) | API: capas, seguridad, cifrado, endpoints, semillas |
+| [`frontend/README.md`](frontend/README.md) | Interfaz: sistema de diseño, PWA, adaptación a pantallas |
+| [`docs/API.md`](docs/API.md) | Referencia de endpoints con parámetros y respuestas |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | Decisiones visuales y validación de la paleta |
 
 ---
 
