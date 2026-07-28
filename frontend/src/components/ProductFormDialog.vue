@@ -1,19 +1,19 @@
 <template>
   <v-dialog v-model="isOpen" max-width="500" persistent @keydown.esc="close">
-    <div class="v-card pos-dialog">
-      <div class="pos-dialog__head">
-        <div class="pos-dialog__icon pos-dialog__icon--primary">
+    <div class="v-card dialog">
+      <div class="dialog__head">
+        <div class="dialog__icon dialog__icon--primary">
           <v-icon size="19" color="primary">{{ isEditing ? 'mdi-pencil-outline' : 'mdi-plus' }}</v-icon>
         </div>
         <div>
-          <div class="pos-dialog__title">{{ isEditing ? 'Editar producto' : 'Nuevo producto' }}</div>
-          <div class="pos-dialog__subtitle">
+          <div class="dialog__title">{{ isEditing ? 'Editar producto' : 'Nuevo producto' }}</div>
+          <div class="dialog__sub">
             {{ isEditing ? 'Los cambios no afectan las ventas ya registradas' : 'Quedará disponible para vender de inmediato' }}
           </div>
         </div>
       </div>
 
-      <div class="pos-dialog__body">
+      <div class="dialog__body">
         <v-form ref="form" v-model="isFormValid" @submit.prevent="submit">
           <v-text-field
             ref="nameField"
@@ -59,6 +59,50 @@
             />
           </div>
 
+          <v-text-field
+            v-model="form.imageUrl"
+            label="Imagen (opcional)"
+            placeholder="https://…"
+            outlined
+            dense
+            class="mb-1"
+            prepend-inner-icon="mdi-image-outline"
+            hint="Si la dejas vacía se genera una portada a partir del nombre"
+            persistent-hint
+            :rules="rules.imageUrl"
+            :error-messages="serverErrors.imageUrl"
+            @input="clearServerError('imageUrl')"
+          />
+
+          <!-- Vista previa: confirma que la URL sirve antes de guardar. -->
+          <div class="form-preview mt-3 mb-1">
+            <div class="form-preview__thumb">
+              <img
+                v-if="form.imageUrl && !previewFailed"
+                :src="form.imageUrl"
+                alt=""
+                class="form-preview__img"
+                @error="previewFailed = true"
+                @load="previewFailed = false"
+              />
+              <div v-else class="form-preview__fallback" :style="{ background: previewGradient }">
+                {{ previewInitials }}
+              </div>
+            </div>
+            <div class="form-preview__text">
+              <div class="form-preview__label">Vista previa</div>
+              <div class="form-preview__hint">
+                {{
+                  form.imageUrl && previewFailed
+                    ? 'No se pudo cargar esa imagen; se usará la portada generada.'
+                    : form.imageUrl
+                      ? 'Así se verá en el catálogo.'
+                      : 'Portada generada a partir del nombre.'
+                }}
+              </div>
+            </div>
+          </div>
+
           <v-textarea
             v-model="form.description"
             label="Descripción (opcional)"
@@ -78,11 +122,11 @@
         </v-form>
       </div>
 
-      <div class="pos-dialog__foot">
-        <span class="pos-dialog__required">Nombre, código y precio son obligatorios</span>
+      <div class="dialog__foot">
+        <span class="dialog__note">Nombre, código y precio son obligatorios</span>
         <v-spacer />
         <v-btn text :disabled="saving" @click="close">Cancelar</v-btn>
-        <v-btn depressed class="pos-btn-primary" :loading="saving" @click="submit">
+        <v-btn depressed class="btn-primary" :loading="saving" @click="submit">
           {{ isEditing ? 'Guardar cambios' : 'Agregar producto' }}
         </v-btn>
       </div>
@@ -93,8 +137,9 @@
 <script>
 import productService from '@/services/productService';
 import { toAmountString } from '@/utils/format';
+import { fallbackGradient, initials } from '@/utils/productImage';
 
-const emptyForm = () => ({ name: '', barcode: '', price: '', description: '' });
+const emptyForm = () => ({ name: '', barcode: '', price: '', description: '', imageUrl: '' });
 
 export default {
   name: 'ProductFormDialog',
@@ -111,6 +156,7 @@ export default {
     saving: false,
     serverErrors: {},
     generalError: '',
+    previewFailed: false,
   }),
 
   computed: {
@@ -125,6 +171,14 @@ export default {
 
     isEditing() {
       return Boolean(this.product && this.product.id);
+    },
+
+    previewGradient() {
+      return fallbackGradient(this.form.name || '');
+    },
+
+    previewInitials() {
+      return this.form.name ? initials(this.form.name) : '?';
     },
 
     rules() {
@@ -145,6 +199,7 @@ export default {
           (v) => Number(String(v).replace(',', '.')) >= 0 || 'No puede ser negativo',
         ],
         description: [(v) => !v || v.length <= 1000 || 'Máximo 1000 caracteres'],
+        imageUrl: [(v) => !v || /^https?:\/\/.+/.test(v) || 'Debe ser una URL completa (https://…)'],
       };
     },
   },
@@ -169,8 +224,11 @@ export default {
             barcode: this.product.barcode,
             price: this.product.price,
             description: this.product.description || '',
+            imageUrl: this.product.imageUrl || '',
           }
         : emptyForm();
+
+      this.previewFailed = false;
 
       this.serverErrors = {};
       this.generalError = '';
@@ -187,11 +245,16 @@ export default {
     },
 
     buildPayload() {
+      // Se normaliza campo a campo con respaldo: el formulario puede llegar
+      // con claves ausentes si se asigna desde fuera.
+      const texto = (valor) => String(valor || '').trim();
+
       return {
-        name: this.form.name.trim(),
-        barcode: this.form.barcode.trim(),
-        price: toAmountString(String(this.form.price).replace(',', '.')),
-        description: this.form.description.trim() || null,
+        name: texto(this.form.name),
+        barcode: texto(this.form.barcode),
+        price: toAmountString(texto(this.form.price).replace(',', '.')),
+        description: texto(this.form.description) || null,
+        imageUrl: texto(this.form.imageUrl) || null,
       };
     },
 
@@ -232,14 +295,56 @@ export default {
 </script>
 
 <style scoped>
-.pos-dialog__subtitle {
+.form-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--pos-surface-2);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.form-preview__thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+.form-preview__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.form-preview__fallback {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+}
+.form-preview__label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  color: var(--pos-text);
+}
+.form-preview__hint {
+  font-size: 0.75rem;
+  color: var(--pos-text-faint);
+  line-height: 1.4;
+  margin-top: 1px;
+}
+
+.dialog__sub {
   font-size: 0.78125rem;
   color: var(--pos-text-faint);
   margin-top: 1px;
   line-height: 1.4;
 }
 
-.pos-dialog__required {
+.dialog__note {
   font-size: 0.75rem;
   color: var(--pos-text-faint);
 }

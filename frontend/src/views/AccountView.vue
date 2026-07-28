@@ -1,9 +1,9 @@
 <template>
   <v-container fluid class="pa-4 pos-page">
-    <div class="pos-panel mb-4">
-      <header class="pos-panel__head">
+    <div class="panel mb-4">
+      <header class="panel__head">
         <v-icon size="18" color="primary">mdi-account-circle-outline</v-icon>
-        <span class="pos-panel__title">Mi cuenta</span>
+        <span class="panel__title">Mi cuenta</span>
       </header>
 
       <div class="pa-4 d-flex align-center">
@@ -13,7 +13,7 @@
         <div>
           <div class="pos-account__name">{{ user.name }}</div>
           <div class="pos-account__meta">
-            <span class="pos-barcode">{{ user.username }}</span>
+            <span class="code">{{ user.username }}</span>
             <span v-if="user.email"> · {{ user.email }}</span>
           </div>
           <span class="pos-role-chip mt-1">{{ roleLabel }}</span>
@@ -34,10 +34,10 @@
       </div>
     </div>
 
-    <div class="pos-panel">
-      <header class="pos-panel__head">
+    <div class="panel">
+      <header class="panel__head">
         <v-icon size="18" color="primary">mdi-lock-reset</v-icon>
-        <span class="pos-panel__title">Cambiar contraseña</span>
+        <span class="panel__title">Cambiar contraseña</span>
       </header>
 
       <div class="pa-4">
@@ -82,7 +82,7 @@
           <v-alert v-if="generalError" type="error" dense text class="mb-3">{{ generalError }}</v-alert>
           <v-alert v-if="successMessage" type="success" dense text class="mb-3">{{ successMessage }}</v-alert>
 
-          <v-btn type="submit" depressed class="pos-btn-primary" :loading="saving">Actualizar contraseña</v-btn>
+          <v-btn type="submit" depressed class="btn-primary" :loading="saving">Actualizar contraseña</v-btn>
         </v-form>
       </div>
     </div>
