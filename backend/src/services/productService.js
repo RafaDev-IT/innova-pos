@@ -90,7 +90,7 @@ async function assertBarcodeAvailable(barcode, excludeId = null) {
   }
 }
 
-async function create({ name, barcode, price, description = null, isActive = true }) {
+async function create({ name, barcode, price, description = null, imageUrl = null, isActive = true }) {
   await assertBarcodeAvailable(barcode);
 
   return Product.create({
@@ -98,6 +98,7 @@ async function create({ name, barcode, price, description = null, isActive = tru
     barcode,
     price: toAmountString(price),
     description,
+    imageUrl,
     isActive,
   });
 }
@@ -114,6 +115,7 @@ async function update(id, payload) {
   if (payload.barcode !== undefined) changes.barcode = payload.barcode;
   if (payload.price !== undefined) changes.price = toAmountString(payload.price);
   if (payload.description !== undefined) changes.description = payload.description;
+  if (payload.imageUrl !== undefined) changes.imageUrl = payload.imageUrl;
   if (payload.isActive !== undefined) changes.isActive = payload.isActive;
 
   await product.update(changes);
