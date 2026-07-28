@@ -1,5 +1,3 @@
-const request = require('supertest');
-const app = require('../../src/app');
 const { Product, Sale, SaleItem, sequelize } = require('../../src/models');
 
 const createProduct = (overrides = {}) =>
@@ -18,7 +16,7 @@ describe('POST /api/sales', () => {
     const coca = await createProduct();
     const agua = await createProduct({ name: 'Agua 1 L', barcode: '7501030000015', price: '14.00' });
 
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: coca.id, quantity: 2 }, { productId: agua.id }] })
       .expect(201);
@@ -33,7 +31,7 @@ describe('POST /api/sales', () => {
   it('usa el precio de catálogo cuando el renglón no trae precio', async () => {
     const product = await createProduct();
 
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
@@ -44,7 +42,7 @@ describe('POST /api/sales', () => {
   it('respeta el precio editado dentro de la venta', async () => {
     const product = await createProduct();
 
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, unitPrice: '12.00', quantity: 3 }] })
       .expect(201);
@@ -57,7 +55,7 @@ describe('POST /api/sales', () => {
   it('acepta precio cero en la venta (artículo de cortesía)', async () => {
     const product = await createProduct();
 
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, unitPrice: '0' }] })
       .expect(201);
@@ -68,7 +66,7 @@ describe('POST /api/sales', () => {
   it('guarda una copia del nombre y del código de barras del producto', async () => {
     const product = await createProduct();
 
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
@@ -84,7 +82,7 @@ describe('POST /api/sales', () => {
     const product = await createProduct({ price: '0.07' });
     const items = Array.from({ length: 100 }, () => ({ productId: product.id }));
 
-    const res = await request(app).post('/api/sales').send({ items }).expect(201);
+    const res = await apiAs().post('/api/sales').send({ items }).expect(201);
 
     expect(res.body.data.total).toBe('7.00');
   });
@@ -93,11 +91,11 @@ describe('POST /api/sales', () => {
     await resetFolioSequence();
     const product = await createProduct();
 
-    const first = await request(app)
+    const first = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
-    const second = await request(app)
+    const second = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
@@ -107,17 +105,17 @@ describe('POST /api/sales', () => {
   });
 
   it('rechaza una venta sin renglones', async () => {
-    const res = await request(app).post('/api/sales').send({ items: [] }).expect(422);
+    const res = await apiAs().post('/api/sales').send({ items: [] }).expect(422);
 
     expect(res.body.error.details[0].field).toBe('items');
   });
 
   it('rechaza una venta sin el campo items', async () => {
-    await request(app).post('/api/sales').send({}).expect(422);
+    await apiAs().post('/api/sales').send({}).expect(422);
   });
 
   it('rechaza un producto inexistente indicando el renglón', async () => {
-    const res = await request(app)
+    const res = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: 99999 }] })
       .expect(400);
@@ -129,7 +127,7 @@ describe('POST /api/sales', () => {
     const product = await createProduct();
     await product.destroy();
 
-    await request(app)
+    await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(400);
@@ -138,12 +136,12 @@ describe('POST /api/sales', () => {
   it('rechaza precios negativos y cantidades no positivas', async () => {
     const product = await createProduct();
 
-    await request(app)
+    await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, unitPrice: '-1' }] })
       .expect(422);
 
-    await request(app)
+    await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, quantity: 0 }] })
       .expect(422);
@@ -155,7 +153,7 @@ describe('POST /api/sales', () => {
       .spyOn(SaleItem, 'bulkCreate')
       .mockRejectedValueOnce(new Error('fallo simulado al insertar el detalle'));
 
-    await request(app)
+    await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(500);
@@ -171,17 +169,17 @@ describe('POST /api/sales', () => {
 describe('integridad histórica de la venta', () => {
   it('no se altera cuando el producto cambia de precio y de nombre después', async () => {
     const product = await createProduct();
-    const sale = await request(app)
+    const sale = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, quantity: 2 }] })
       .expect(201);
 
-    await request(app)
+    await apiAs()
       .put(`/api/products/${product.id}`)
       .send({ price: '99.00', name: 'Nombre cambiado' })
       .expect(200);
 
-    const res = await request(app).get(`/api/sales/${sale.body.data.id}`).expect(200);
+    const res = await apiAs().get(`/api/sales/${sale.body.data.id}`).expect(200);
 
     expect(res.body.data.total).toBe('37.00');
     expect(res.body.data.items[0].unitPrice).toBe('18.50');
@@ -190,14 +188,14 @@ describe('integridad histórica de la venta', () => {
 
   it('sigue siendo legible tras dar de baja el producto', async () => {
     const product = await createProduct();
-    const sale = await request(app)
+    const sale = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
 
-    await request(app).delete(`/api/products/${product.id}`).expect(204);
+    await apiAs().delete(`/api/products/${product.id}`).expect(204);
 
-    const res = await request(app).get(`/api/sales/${sale.body.data.id}`).expect(200);
+    const res = await apiAs().get(`/api/sales/${sale.body.data.id}`).expect(200);
 
     expect(res.body.data.items[0].productName).toBe('Coca-Cola 600 ml');
     expect(res.body.data.items[0].unitPrice).toBe('18.50');
@@ -205,7 +203,7 @@ describe('integridad histórica de la venta', () => {
 
   it('elimina los renglones en cascada al borrar la venta', async () => {
     const product = await createProduct();
-    const created = await request(app)
+    const created = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
@@ -220,16 +218,16 @@ describe('GET /api/sales', () => {
   it('lista el histórico con la venta más reciente primero', async () => {
     const product = await createProduct();
 
-    const first = await request(app)
+    const first = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
-    const second = await request(app)
+    const second = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id, quantity: 2 }] })
       .expect(201);
 
-    const res = await request(app).get('/api/sales').expect(200);
+    const res = await apiAs().get('/api/sales').expect(200);
 
     expect(res.body.data).toHaveLength(2);
     expect(res.body.data.map((s) => s.id)).toEqual([second.body.data.id, first.body.data.id]);
@@ -238,12 +236,12 @@ describe('GET /api/sales', () => {
 
   it('no incluye el detalle en el listado', async () => {
     const product = await createProduct();
-    await request(app)
+    await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: product.id }] })
       .expect(201);
 
-    const res = await request(app).get('/api/sales').expect(200);
+    const res = await apiAs().get('/api/sales').expect(200);
 
     expect(res.body.data[0].items).toBeUndefined();
   });
@@ -252,13 +250,13 @@ describe('GET /api/sales', () => {
     const product = await createProduct();
     for (let i = 0; i < 3; i += 1) {
       // eslint-disable-next-line no-await-in-loop
-      await request(app)
+      await apiAs()
         .post('/api/sales')
         .send({ items: [{ productId: product.id }] })
         .expect(201);
     }
 
-    const res = await request(app).get('/api/sales?limit=2').expect(200);
+    const res = await apiAs().get('/api/sales?limit=2').expect(200);
 
     expect(res.body.data).toHaveLength(2);
     expect(res.body.meta).toMatchObject({ total: 3, hasMore: true });
@@ -270,21 +268,21 @@ describe('GET /api/sales/:id', () => {
     const coca = await createProduct();
     const agua = await createProduct({ name: 'Agua', barcode: '7501030000015', price: '14.00' });
 
-    const created = await request(app)
+    const created = await apiAs()
       .post('/api/sales')
       .send({ items: [{ productId: coca.id }, { productId: agua.id }] })
       .expect(201);
 
-    const res = await request(app).get(`/api/sales/${created.body.data.id}`).expect(200);
+    const res = await apiAs().get(`/api/sales/${created.body.data.id}`).expect(200);
 
     expect(res.body.data.items.map((i) => i.productName)).toEqual(['Coca-Cola 600 ml', 'Agua']);
   });
 
   it('devuelve 404 si la venta no existe', async () => {
-    await request(app).get('/api/sales/99999').expect(404);
+    await apiAs().get('/api/sales/99999').expect(404);
   });
 
   it('devuelve 422 si el id no es un entero', async () => {
-    await request(app).get('/api/sales/abc').expect(422);
+    await apiAs().get('/api/sales/abc').expect(422);
   });
 });
