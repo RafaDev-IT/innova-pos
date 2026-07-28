@@ -251,9 +251,14 @@ Después, una vez: `npm run db:seed:prod`.
 tiempo de ejecución: en un build estático no existe el proxy del servidor de
 desarrollo y el navegador llama a la API directamente.
 
+La URL vive en `frontend/.env.production`, que sí se versiona: no es un secreto
+y evita tener que recordarla en cada compilación. Olvidarla no da error de
+compilación —la aplicación llamaría a `/api` del propio dominio de Firebase— y
+el fallo solo aparecería al intentar iniciar sesión.
+
 ```bash
 cd frontend
-VITE_API_BASE_URL=https://tu-api.onrender.com/api npm run build
+npm run build
 firebase deploy --only hosting
 ```
 
