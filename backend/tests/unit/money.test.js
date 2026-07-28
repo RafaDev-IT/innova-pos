@@ -13,7 +13,17 @@ describe('toCents', () => {
     expect(toCents(0.29)).toBe(29);
   });
 
+  it('parsea los strings decimales de forma exacta, sin pasar por float', () => {
+    // Number('1.005') es 1.00499999999999989: por la vía numérica daría 100.
+    // Por eso la API transporta los importes como string.
+    expect(toCents('1.005')).toBe(101);
+    expect(toCents('2.675')).toBe(268);
+  });
 
+  it('aplica redondeo comercial a partir del tercer decimal', () => {
+    expect(toCents('9.994')).toBe(999);
+    expect(toCents('9.995')).toBe(1000);
+  });
 
   it('admite montos sin parte entera o sin decimales', () => {
     expect(toCents('.5')).toBe(50);
