@@ -58,46 +58,48 @@
         <StatTile label="Artículos" :value="formatNumber(data.summary.itemCount)" caption="unidades vendidas" />
       </div>
 
-      <div class="panel mb-4">
-        <header class="panel__head">
-          <div>
-            <div class="panel__title">Facturación diaria</div>
-            <div class="panel__sub">{{ formatDate(data.from) }} — {{ formatDate(data.to) }}</div>
-          </div>
-        </header>
-        <div class="px-4 pb-3">
-          <ColumnChart
-            :points="puntosDiarios"
-            :format="formatCurrencyCompact"
-            aria-label="Facturación por día del período"
-            :height="240"
-          />
-        </div>
-      </div>
-
       <div class="grid-two">
-        <div class="panel">
-          <header class="panel__head">
-            <div class="panel__title">Productos más vendidos</div>
-            <v-spacer />
-            <span class="chip-soft">{{ data.byProduct.length }}</span>
-          </header>
-          <div class="px-4 pb-3 tabla-scroll scroll">
-            <table class="data-table">
-              <thead>
-                <tr><th>Producto</th><th class="num">Unidades</th><th class="num">Total</th></tr>
-              </thead>
-              <tbody>
-                <tr v-for="p in data.byProduct" :key="p.productId || p.name">
-                  <td>
-                    {{ p.name }}
-                    <div class="code">{{ p.barcode }}</div>
-                  </td>
-                  <td class="num">{{ p.quantity }}</td>
-                  <td class="num">{{ formatCurrency(p.total) }}</td>
-                </tr>
-              </tbody>
-            </table>
+        <div>
+          <div class="panel mb-4">
+            <header class="panel__head">
+              <div>
+                <div class="panel__title">Facturación diaria</div>
+                <div class="panel__sub">{{ formatDate(data.from) }} — {{ formatDate(data.to) }}</div>
+              </div>
+            </header>
+            <div class="px-4 pb-3">
+              <ColumnChart
+                :points="puntosDiarios"
+                :format="formatCurrencyCompact"
+                aria-label="Facturación por día del período"
+                :height="240"
+              />
+            </div>
+          </div>
+
+          <div class="panel">
+            <header class="panel__head">
+              <div class="panel__title">Productos más vendidos</div>
+              <v-spacer />
+              <span class="chip-soft">{{ data.byProduct.length }}</span>
+            </header>
+            <div class="px-4 pb-3 tabla-scroll scroll">
+              <table class="data-table">
+                <thead>
+                  <tr><th>Producto</th><th class="num">Unidades</th><th class="num">Total</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="p in data.byProduct" :key="p.productId || p.name">
+                    <td>
+                      {{ p.name }}
+                      <div class="code">{{ p.barcode }}</div>
+                    </td>
+                    <td class="num">{{ p.quantity }}</td>
+                    <td class="num">{{ formatCurrency(p.total) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
