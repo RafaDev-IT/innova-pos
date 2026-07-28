@@ -82,7 +82,7 @@ function buildLines(items, productsById) {
  * cualquier renglón, la cabecera tampoco queda guardada. Una venta a medias
  * es peor que ninguna venta.
  */
-async function create({ items }) {
+async function create({ items, user = null }) {
   if (!Array.isArray(items) || items.length === 0) {
     throw ApiError.badRequest('La venta debe incluir al menos un producto');
   }
@@ -108,6 +108,8 @@ async function create({ items }) {
         itemCount: unitCount,
         status: 'completed',
         soldAt: new Date(),
+        userId: user ? user.id : null,
+        userName: user ? user.name : null,
       },
       { transaction },
     );

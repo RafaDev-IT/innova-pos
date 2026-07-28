@@ -2,7 +2,9 @@ const saleService = require('../services/saleService');
 const asyncHandler = require('../utils/asyncHandler');
 
 const create = asyncHandler(async (req, res) => {
-  const sale = await saleService.create({ items: req.body.items });
+  // El cajero se toma de la sesión, nunca del cuerpo de la petición: si
+  // viniera del cliente, cualquiera podría registrar ventas a nombre de otro.
+  const sale = await saleService.create({ items: req.body.items, user: req.user });
   res.status(201).json({ success: true, data: sale });
 });
 
