@@ -4,90 +4,80 @@
     <router-view v-if="isBlankLayout" />
 
     <template v-else>
-      <v-navigation-drawer v-model="drawer" app :mini-variant="mini" :width="238" class="pos-nav">
-        <div class="pos-nav__brand">
-          <div class="pos-brand-plate">
-            <img :src="brandMark" alt="InnovaB" class="pos-brand-plate__img" />
+      <v-navigation-drawer v-model="drawer" app :width="228" class="nav" floating>
+        <div class="nav__brand">
+          <div class="brand-plate">
+            <img :src="brandMark" alt="InnovaB" class="brand-plate__img" />
           </div>
-          <div v-if="!mini" class="ml-3">
-            <div class="pos-brand">Innova POS</div>
-            <div class="pos-brand-sub">by InnovaB</div>
+          <div class="ml-3">
+            <div class="brand__name">Innova POS</div>
+            <div class="brand__sub">by InnovaB</div>
           </div>
         </div>
 
-        <v-divider />
-
-        <v-list nav dense class="pt-2">
-          <v-list-item
+        <nav class="nav__list">
+          <router-link
             v-for="item in navItems"
             :key="item.name"
             :to="{ name: item.name }"
-            link
-            class="pos-nav__item"
+            class="nav__item"
+            :class="{ 'nav__item--active': $route.name === item.name }"
           >
-            <v-list-item-icon class="mr-3">
-              <v-icon size="20">{{ item.icon }}</v-icon>
-            </v-list-item-icon>
-            <v-list-item-title>{{ item.title }}</v-list-item-title>
-          </v-list-item>
-        </v-list>
+            <v-icon size="19" :color="$route.name === item.name ? 'white' : undefined">{{ item.icon }}</v-icon>
+            {{ item.title }}
+          </router-link>
+        </nav>
 
         <template #append>
-          <v-divider />
-          <div class="pos-nav__user">
-            <v-avatar size="34" color="primary" class="flex-shrink-0">
-              <span class="white--text font-weight-bold">{{ initials }}</span>
+          <router-link :to="{ name: 'account' }" class="nav__user">
+            <v-avatar size="32" color="primary" class="flex-shrink-0">
+              <span class="white--text font-weight-bold text-caption">{{ initials }}</span>
             </v-avatar>
-            <div v-if="!mini" class="pos-nav__user-info">
-              <div class="pos-nav__user-name">{{ user.name }}</div>
-              <div class="pos-nav__user-role">{{ roleLabel }}</div>
+            <div class="flex-grow-1 min-width-0">
+              <div class="nav__user-name">{{ user.name }}</div>
+              <div class="nav__user-role">{{ roleLabel }}</div>
             </div>
-            <v-menu v-if="!mini" top offset-y>
-              <template #activator="{ on, attrs }">
-                <v-btn icon small v-bind="attrs" v-on="on">
-                  <v-icon size="18">mdi-dots-vertical</v-icon>
-                </v-btn>
-              </template>
-              <v-list dense>
-                <v-list-item :to="{ name: 'account' }">
-                  <v-list-item-icon class="mr-3"><v-icon size="18">mdi-account-circle-outline</v-icon></v-list-item-icon>
-                  <v-list-item-title>Mi cuenta</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="logout">
-                  <v-list-item-icon class="mr-3"><v-icon size="18">mdi-logout</v-icon></v-list-item-icon>
-                  <v-list-item-title>Cerrar sesión</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
+          </router-link>
+
+          <div class="nav__actions">
+            <button type="button" class="nav__action" :title="isDark ? 'Tema claro' : 'Tema oscuro'" @click="toggleTheme">
+              <v-icon size="18">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+            </button>
+            <button type="button" class="nav__action nav__action--danger" title="Cerrar sesión" @click="logout">
+              <v-icon size="18">mdi-logout</v-icon>
+              Salir
+            </button>
           </div>
         </template>
       </v-navigation-drawer>
 
-      <v-app-bar app flat height="56" class="pos-appbar">
-        <v-btn icon dark :title="mini ? 'Expandir menú' : 'Contraer menú'" @click="toggleNav">
+      <v-app-bar app flat height="64" class="topbar">
+        <v-btn icon class="d-lg-none" @click="drawer = !drawer">
           <v-icon size="21">mdi-menu</v-icon>
         </v-btn>
-        <span class="pos-appbar__title ml-2">{{ pageTitle }}</span>
+
+        <div>
+          <div class="topbar__title">{{ pageTitle }}</div>
+          <div class="topbar__sub">{{ today }}</div>
+        </div>
 
         <v-spacer />
 
-        <div v-if="$route.name === 'pos'" class="d-none d-lg-flex align-center mr-4" style="gap: 14px">
-          <span class="pos-shortcut-hint"><kbd class="pos-kbd">F2</kbd> Buscar</span>
-          <span class="pos-shortcut-hint"><kbd class="pos-kbd">F9</kbd> Guardar venta</span>
-        </div>
+        <span v-if="$route.name === 'pos'" class="d-none d-xl-inline-flex chip-soft mr-3">
+          <kbd class="kbd">F2</kbd> buscar
+          <kbd class="kbd ml-1">F9</kbd> cobrar
+        </span>
 
-        <div
-          class="pos-status mr-2"
-          :class="apiOnline ? 'pos-status--online' : 'pos-status--offline'"
+        <span
+          class="chip-soft"
+          :class="apiOnline ? 'chip-green' : 'chip-red'"
           :title="apiOnline ? 'La API responde correctamente' : 'Sin respuesta de la API'"
         >
-          <span class="pos-status__dot" />
+          <v-icon size="13" :color="apiOnline ? 'primary' : 'error'">
+            {{ apiOnline ? 'mdi-check-circle' : 'mdi-alert-circle' }}
+          </v-icon>
           {{ apiOnline ? 'En línea' : 'Sin conexión' }}
-        </div>
-
-        <v-btn icon dark :title="isDark ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'" @click="toggleTheme">
-          <v-icon size="20">{{ isDark ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
-        </v-btn>
+        </span>
       </v-app-bar>
 
       <v-main>
@@ -114,7 +104,6 @@ import { THEME_STORAGE_KEY } from '@/plugins/vuetify';
 import brandMark from '@/assets/innovab-mark.png';
 
 const HEALTH_INTERVAL_MS = 15000;
-const NAV_STORAGE_KEY = 'innova-pos:nav-mini';
 
 export default {
   name: 'App',
@@ -122,7 +111,6 @@ export default {
   data: () => ({
     brandMark,
     drawer: true,
-    mini: false,
     apiOnline: false,
     healthTimer: null,
     notification: { visible: false, message: '', color: 'success' },
@@ -153,16 +141,23 @@ export default {
       return this.$route.meta.title || '';
     },
 
+    today() {
+      const texto = new Intl.DateTimeFormat('es-MX', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      }).format(new Date());
+      // Solo la inicial en mayúscula: `text-transform: capitalize` también
+      // capitalizaría la preposición ("27 De Julio").
+      return texto.charAt(0).toUpperCase() + texto.slice(1);
+    },
+
     /** Solo las rutas visibles para las que el usuario tiene permiso. */
     navItems() {
       return this.$router.options.routes
         .filter((route) => route.meta && !route.meta.public && !route.meta.hiddenInNav)
         .filter((route) => !route.meta.permission || session.can(route.meta.permission))
-        .map((route) => ({
-          name: route.name,
-          title: route.meta.title,
-          icon: route.meta.icon,
-        }));
+        .map((route) => ({ name: route.name, title: route.meta.title, icon: route.meta.icon }));
     },
 
     isDark() {
@@ -178,17 +173,12 @@ export default {
 
   created() {
     // Si el token deja de ser válido en cualquier momento, se limpia la sesión
-    // y se lleva al usuario al inicio de sesión sin dejarlo en una pantalla
-    // que ya no puede usar.
+    // y se lleva al usuario al inicio de sesión.
     setSessionExpiredHandler((message) => this.onSessionExpired(message));
 
-    try {
-      this.mini = window.localStorage.getItem(NAV_STORAGE_KEY) === '1';
-    } catch (error) {
-      this.mini = false;
-    }
-
     this.checkApiHealth({ silent: true });
+    // El indicador se revalida periódicamente: comprobarlo solo al arrancar
+    // haría que siguiera anunciando "En línea" tras caer la API.
     this.healthTimer = setInterval(() => this.checkApiHealth({ silent: true }), HEALTH_INTERVAL_MS);
   },
 
@@ -197,21 +187,12 @@ export default {
   },
 
   methods: {
-    toggleNav() {
-      this.mini = !this.mini;
-      try {
-        window.localStorage.setItem(NAV_STORAGE_KEY, this.mini ? '1' : '0');
-      } catch (error) {
-        // Sin localStorage la preferencia no persiste; no es crítico.
-      }
-    },
-
     toggleTheme() {
       this.$vuetify.theme.dark = !this.$vuetify.theme.dark;
       try {
         window.localStorage.setItem(THEME_STORAGE_KEY, this.$vuetify.theme.dark ? 'dark' : 'light');
       } catch (error) {
-        // Igual que arriba: solo se pierde la persistencia.
+        // Sin localStorage el tema no persiste entre sesiones; no es crítico.
       }
     },
 
@@ -264,103 +245,68 @@ html {
   overflow-y: auto;
 }
 
-.pos-appbar__title {
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: var(--pos-on-ink);
-  letter-spacing: -0.01em;
-}
-
-.pos-nav {
-  background: var(--pos-surface) !important;
-  border-right: 1px solid var(--pos-border) !important;
-}
-
-.pos-nav__brand {
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  height: 56px;
-}
-
-.pos-nav__item.v-list-item--active {
-  background: var(--pos-primary-soft) !important;
-  color: var(--pos-primary) !important;
-}
-.pos-nav__item .v-list-item__title {
-  font-size: 0.875rem;
-  font-weight: 550;
-}
-
-.pos-nav__user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px;
-}
-.pos-nav__user-info {
+.min-width-0 {
   min-width: 0;
-  flex: 1 1 auto;
-}
-.pos-nav__user-name {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--pos-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.pos-nav__user-role {
-  font-size: 0.6875rem;
-  color: var(--pos-text-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
-.pos-brand-plate {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  background: #ffffff;
-  border: 1px solid var(--pos-border);
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  flex: 0 0 auto;
+/* Barra superior integrada en el lienzo: sin sombra ni borde, para que la
+   atención quede en las tarjetas y no en el marco. */
+.topbar {
+  background: transparent !important;
+  box-shadow: none !important;
 }
-.pos-brand-plate__img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-.pos-brand {
-  font-weight: 700;
-  font-size: 0.9375rem;
-  letter-spacing: -0.02em;
+.topbar__title {
+  font-size: 1.125rem;
+  font-weight: 650;
+  letter-spacing: -0.022em;
   color: var(--pos-text);
   line-height: 1.2;
 }
-.pos-brand-sub {
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.topbar__sub {
+  font-size: 0.75rem;
   color: var(--pos-text-faint);
-  line-height: 1;
 }
 
-.pos-shortcut-hint {
-  font-size: 0.75rem;
-  color: var(--pos-on-ink-muted);
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.nav__user {
+  text-decoration: none;
+  transition: background 0.14s ease;
 }
-.pos-shortcut-hint .pos-kbd {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #cbd5e1;
+.nav__user:hover {
+  background: var(--pos-primary-soft);
+}
+
+.nav__actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 12px 14px;
+}
+.nav__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--pos-surface-2);
+  color: var(--pos-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+  flex: 0 0 auto;
+  width: 44px;
+}
+.nav__action--danger {
+  flex: 1 1 auto;
+  width: auto;
+}
+.nav__action:hover {
+  background: var(--pos-border);
+  color: var(--pos-text);
+}
+.nav__action--danger:hover {
+  background: var(--pos-danger-soft);
+  color: var(--pos-danger);
 }
 </style>

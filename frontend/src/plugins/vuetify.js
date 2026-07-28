@@ -15,31 +15,30 @@ import '@/styles/design-system.css';
 Vue.use(Vuetify);
 
 /**
- * Paleta "Terminal de trabajo".
+ * Paleta.
  *
- * Teal profundo en lugar del azul corporativo por defecto, y ámbar reservado
- * exclusivamente para señalar un precio ajustado dentro de la venta: un color,
- * un significado. Los pares texto/fondo cumplen contraste AA de WCAG, y la
- * cifra del total alcanza AAA.
+ * Verde como único acento —precios, elemento activo y acción principal— y ámbar
+ * reservado en exclusiva para señalar un precio ajustado dentro de la venta: un
+ * color, un significado. Los pares texto/fondo cumplen contraste AA de WCAG.
  */
 const light = {
-  primary: '#0F766E',
-  secondary: '#131C2B',
-  accent: '#B45309',
-  error: '#B3261E',
-  warning: '#B45309',
-  info: '#0369A1',
-  success: '#15803D',
+  primary: '#12A150',
+  secondary: '#1A2027',
+  accent: '#D97706',
+  error: '#DC2626',
+  warning: '#D97706',
+  info: '#0284C7',
+  success: '#12A150',
 };
 
 const dark = {
-  primary: '#2DD4BF',
-  secondary: '#E8EEF7',
+  primary: '#2ECC71',
+  secondary: '#E8EDF3',
   accent: '#F0A44A',
-  error: '#F2685C',
+  error: '#F0655A',
   warning: '#F0A44A',
   info: '#38BDF8',
-  success: '#4ADE80',
+  success: '#2ECC71',
 };
 
 export const THEME_STORAGE_KEY = 'innova-pos:theme';

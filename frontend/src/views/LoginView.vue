@@ -48,7 +48,7 @@
             No hay respuesta de la API. Verifica que el servidor esté ejecutándose.
           </v-alert>
 
-          <v-btn type="submit" depressed block large class="pos-btn-primary" :loading="loading">
+          <v-btn type="submit" depressed block large class="btn-primary" :loading="loading">
             Entrar
           </v-btn>
         </v-form>

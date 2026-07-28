@@ -35,6 +35,11 @@ const createProduct = [
   priceRule(body('price').exists({ values: 'null' }).withMessage('El precio es obligatorio').bail()),
 
   body('description').optional({ nullable: true }).isString().trim().isLength({ max: 1000 }),
+  body('imageUrl')
+    .optional({ nullable: true, checkFalsy: true })
+    .isURL({ require_protocol: true })
+    .withMessage('La imagen debe ser una URL completa (https://…)')
+    .isLength({ max: 500 }),
   body('isActive').optional().isBoolean().toBoolean(),
 ];
 
@@ -51,11 +56,16 @@ const updateProduct = [
     .withMessage('El código de barras solo admite letras, números, guiones y puntos'),
   priceRule(body('price').optional()),
   body('description').optional({ nullable: true }).isString().trim().isLength({ max: 1000 }),
+  body('imageUrl')
+    .optional({ nullable: true, checkFalsy: true })
+    .isURL({ require_protocol: true })
+    .withMessage('La imagen debe ser una URL completa (https://…)')
+    .isLength({ max: 500 }),
   body('isActive').optional().isBoolean().toBoolean(),
 
   // Evita respuestas 200 engañosas ante un PUT/PATCH sin ningún campo.
   body().custom((value) => {
-    const allowed = ['name', 'barcode', 'price', 'description', 'isActive'];
+    const allowed = ['name', 'barcode', 'price', 'description', 'imageUrl', 'isActive'];
     if (!allowed.some((field) => value[field] !== undefined)) {
       throw new Error('Debes enviar al menos un campo para actualizar');
     }

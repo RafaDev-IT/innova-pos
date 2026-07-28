@@ -51,6 +51,7 @@ describe('ProductFormDialog', () => {
       barcode: '7501030000015',
       price: '14.00',
       description: null,
+      imageUrl: null,
     });
     wrapper.destroy();
   });

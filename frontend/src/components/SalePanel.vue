@@ -1,145 +1,152 @@
 <template>
-  <div class="pos-panel">
-    <header class="pos-panel__head">
-      <v-icon size="18" color="primary">mdi-cart-outline</v-icon>
-      <span class="pos-panel__title">Venta actual</span>
+  <div class="panel">
+    <header class="panel__head">
+      <div>
+        <div class="panel__title">Venta actual</div>
+        <div class="panel__sub">
+          {{ items.length ? `${unitCount} ${unitCount === 1 ? 'artículo' : 'artículos'}` : 'Sin artículos' }}
+        </div>
+      </div>
       <v-spacer />
-      <span v-if="items.length" class="pos-count-strong">
-        {{ unitCount }} {{ unitCount === 1 ? 'artículo' : 'artículos' }}
-      </span>
+      <v-btn v-if="items.length" icon small title="Vaciar la venta" @click="confirmClear">
+        <v-icon size="19">mdi-notification-clear-all</v-icon>
+      </v-btn>
     </header>
 
-    <div class="pos-panel__body pos-scroll">
-      <div v-if="!items.length" class="pos-empty">
-        <div class="pos-empty__icon">
-          <v-icon size="26" color="grey">mdi-cart-outline</v-icon>
+    <div class="panel__body scroll px-4">
+      <div v-if="!items.length" class="empty">
+        <div class="empty__icon">
+          <v-icon size="28" color="primary">mdi-cart-outline</v-icon>
         </div>
-        <div class="pos-empty__title">Sin artículos</div>
-        <div class="pos-empty__hint">
-          Escanea un código de barras o elige un producto del catálogo para comenzar la venta.
-        </div>
+        <div class="empty__title">Aún no hay artículos</div>
+        <div class="empty__hint">Escanea un código o toca un producto del catálogo para comenzar.</div>
       </div>
 
       <div
         v-for="(item, index) in items"
         v-else
         :key="item.key"
-        class="pos-line"
-        :class="{ 'pos-line--edited': isEdited(item) }"
+        class="line"
+        :class="{ 'line--edited': isEdited(item) }"
       >
-        <div class="d-flex align-start">
-          <div class="pos-line__main">
-            <div class="pos-row__name">{{ item.name }}</div>
-            <div class="pos-line__sub">
-              <span class="pos-barcode">{{ item.barcode }}</span>
-              <span v-if="isEdited(item)" class="pos-line__tag">
-                <v-icon size="11" color="accent">mdi-pencil</v-icon>
-                Precio ajustado · antes {{ formatCurrency(item.catalogPrice) }}
-              </span>
-            </div>
-          </div>
-
-          <div class="pos-line__total">{{ formatCurrency(lineTotal(item)) }}</div>
-
-          <v-btn
-            icon
-            small
-            class="ml-1"
-            color="error"
-            title="Quitar de la venta"
-            @click="removeItem(index)"
-          >
-            <v-icon size="17">mdi-close</v-icon>
-          </v-btn>
-        </div>
-
-        <div class="pos-line__controls">
-          <v-text-field
-            :value="item.unitPrice"
-            class="pos-price-field"
-            outlined
-            dense
-            hide-details="auto"
-            prefix="$"
-            inputmode="decimal"
-            :title="`Precio unitario de ${item.name} en esta venta`"
-            :error-messages="item.priceError ? [item.priceError] : []"
-            @input="updatePrice(index, $event)"
+        <div class="line__thumb">
+          <img
+            v-if="item.imageUrl && !failedImages[item.key]"
+            :src="item.imageUrl"
+            :alt="item.name"
+            class="line__thumb-img"
+            @error="$set(failedImages, item.key, true)"
           />
+          <div v-else class="line__thumb-fallback" :style="{ background: gradientFor(item.name) }">
+            {{ initialsFor(item.name) }}
+          </div>
+        </div>
 
-          <span class="pos-line__x">×</span>
+        <div class="line__body">
+          <div class="d-flex align-start">
+            <div class="flex-grow-1 min-width-0">
+              <div class="line__name" :title="item.name">{{ item.name }}</div>
+              <div class="line__code">
+                <v-icon size="11">mdi-barcode</v-icon>
+                {{ item.barcode }}
+              </div>
+              <div v-if="isEdited(item)" class="line__tag">
+                <v-icon size="11" color="accent">mdi-pencil</v-icon>
+                Antes {{ formatCurrency(item.catalogPrice) }}
+              </div>
+            </div>
+            <v-btn icon x-small class="ml-1" title="Quitar de la venta" @click="removeItem(index)">
+              <v-icon size="16">mdi-close</v-icon>
+            </v-btn>
+          </div>
 
-          <div class="pos-qty">
-            <button
-              class="pos-qty__btn"
-              type="button"
-              :disabled="item.quantity <= 1"
-              title="Quitar una unidad"
-              @click="changeQuantity(index, -1)"
-            >
-              <v-icon size="15">mdi-minus</v-icon>
-            </button>
-            <span class="pos-qty__value">{{ item.quantity }}</span>
-            <button class="pos-qty__btn" type="button" title="Agregar una unidad" @click="changeQuantity(index, 1)">
-              <v-icon size="15">mdi-plus</v-icon>
-            </button>
+          <div class="line__foot">
+            <v-text-field
+              :value="item.unitPrice"
+              class="price-field"
+              outlined
+              dense
+              hide-details="auto"
+              prefix="$"
+              inputmode="decimal"
+              :title="`Precio unitario en esta venta`"
+              :error-messages="item.priceError ? [item.priceError] : []"
+              @input="updatePrice(index, $event)"
+            />
+
+            <div class="qty">
+              <button
+                type="button"
+                class="qty__btn"
+                :disabled="item.quantity <= 1"
+                title="Quitar una unidad"
+                @click="changeQuantity(index, -1)"
+              >
+                <v-icon size="14">mdi-minus</v-icon>
+              </button>
+              <span class="qty__value">{{ item.quantity }}</span>
+              <button type="button" class="qty__btn" title="Agregar una unidad" @click="changeQuantity(index, 1)">
+                <v-icon size="14">mdi-plus</v-icon>
+              </button>
+            </div>
+
+            <v-spacer />
+            <span class="line__total">{{ formatCurrency(lineTotal(item)) }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <v-alert v-if="errorMessage" type="error" dense text class="ma-3 mb-0">
-      {{ errorMessage }}
-    </v-alert>
+    <footer class="sale__foot">
+      <v-alert v-if="errorMessage" type="error" dense text class="mb-3">{{ errorMessage }}</v-alert>
 
-    <!-- Losa del total: único elemento con este tratamiento en la pantalla. -->
-    <div class="pos-total">
-      <div class="d-flex align-center justify-space-between">
-        <span class="pos-total__label">Total a cobrar</span>
-        <span v-if="editedCount" class="pos-total__flag">
-          <v-icon size="12" color="accent">mdi-pencil</v-icon>
-          {{ editedCount }} con precio ajustado
-        </span>
-      </div>
-      <div class="pos-total__amount">
-        <span class="pos-total__currency">$</span>{{ totalAmount }}
-      </div>
-    </div>
+      <div class="totals">
+        <div class="totals__row">
+          <span>Subtotal</span>
+          <strong>{{ formatCurrency(totalAmount) }}</strong>
+        </div>
+        <div class="totals__row">
+          <span>Artículos</span>
+          <strong>{{ unitCount }}</strong>
+        </div>
+        <div v-if="editedCount" class="totals__row">
+          <span class="chip-soft chip-amber">
+            <v-icon size="12" color="accent">mdi-pencil</v-icon>
+            {{ editedCount }} con precio ajustado
+          </span>
+        </div>
 
-    <footer class="pos-actions">
-      <v-btn text class="pos-btn-clear" :disabled="!items.length || saving" @click="confirmClear">
-        <v-icon left size="17">mdi-notification-clear-all</v-icon>
-        Vaciar
-      </v-btn>
-      <v-btn
-        depressed
-        class="pos-btn-primary pos-btn-save ml-2"
-        :disabled="!canSave"
-        :loading="saving"
-        @click="save"
-      >
-        <v-icon left size="19">mdi-check-bold</v-icon>
-        Guardar venta
-        <kbd class="pos-kbd pos-kbd--on-primary ml-2">F9</kbd>
+        <hr class="totals__divider" />
+
+        <div class="totals__grand">
+          <span class="totals__grand-label">Total</span>
+          <span class="totals__grand-amount">{{ formatCurrency(totalAmount) }}</span>
+        </div>
+      </div>
+
+      <v-btn depressed block class="btn-primary btn-tall mt-4" :disabled="!canSave" :loading="saving" @click="save">
+        <v-icon left size="20">mdi-check-circle-outline</v-icon>
+        Cobrar y guardar
+        <kbd class="kbd kbd--on-primary ml-2">F9</kbd>
       </v-btn>
     </footer>
 
     <v-dialog v-model="clearDialog" max-width="410">
-      <div class="v-card pos-dialog">
-        <div class="pos-dialog__head">
-          <div class="pos-dialog__icon pos-dialog__icon--danger">
-            <v-icon size="19" color="error">mdi-notification-clear-all</v-icon>
+      <div class="dialog">
+        <div class="dialog__head">
+          <div class="dialog__icon dialog__icon--danger">
+            <v-icon size="20" color="error">mdi-notification-clear-all</v-icon>
           </div>
-          <span class="pos-dialog__title">Vaciar la venta</span>
+          <div class="dialog__title">Vaciar la venta</div>
         </div>
-        <div class="pos-dialog__body">
-          <p class="pos-dialog__text mb-0">
+        <div class="dialog__body">
+          <p class="dialog__text mb-0">
             Se descartarán los <strong>{{ items.length }}</strong>
             {{ items.length === 1 ? 'renglón capturado' : 'renglones capturados' }}, incluidos los precios
-            que hayas ajustado. Esta acción no se puede deshacer.
+            ajustados. No se puede deshacer.
           </p>
         </div>
-        <div class="pos-dialog__foot">
+        <div class="dialog__foot">
           <v-spacer />
           <v-btn text @click="clearDialog = false">Cancelar</v-btn>
           <v-btn color="error" depressed @click="clear">Vaciar</v-btn>
@@ -147,32 +154,31 @@
       </div>
     </v-dialog>
 
-    <v-dialog v-model="receipt.open" max-width="400">
-      <div v-if="receipt.sale" class="v-card pos-dialog">
-        <div class="pos-dialog__head">
-          <div class="pos-dialog__icon pos-dialog__icon--success">
-            <v-icon size="20" color="success">mdi-check-bold</v-icon>
+    <v-dialog v-model="receipt.open" max-width="380">
+      <div v-if="receipt.sale" class="dialog">
+        <div class="receipt__hero">
+          <div class="receipt__check">
+            <v-icon size="30" color="white">mdi-check-bold</v-icon>
           </div>
-          <span class="pos-dialog__title">Venta registrada</span>
+          <div class="receipt__title">Venta registrada</div>
+          <div class="receipt__folio">{{ receipt.sale.folio }}</div>
         </div>
-        <div class="pos-dialog__body">
-          <div class="pos-receipt__row">
-            <span>Folio</span>
-            <strong class="pos-receipt__folio">{{ receipt.sale.folio }}</strong>
-          </div>
-          <div class="pos-receipt__row">
-            <span>Artículos</span>
-            <strong>{{ receipt.sale.itemCount }}</strong>
-          </div>
-          <div class="pos-receipt__total">
-            <span class="pos-total__label" style="color: var(--pos-text-muted)">Total cobrado</span>
-            <span class="pos-receipt__amount">{{ formatCurrency(receipt.sale.total) }}</span>
+        <div class="dialog__body">
+          <div class="totals">
+            <div class="totals__row">
+              <span>Artículos</span>
+              <strong>{{ receipt.sale.itemCount }}</strong>
+            </div>
+            <hr class="totals__divider" />
+            <div class="totals__grand">
+              <span class="totals__grand-label">Cobrado</span>
+              <span class="totals__grand-amount">{{ formatCurrency(receipt.sale.total) }}</span>
+            </div>
           </div>
         </div>
-        <div class="pos-dialog__foot">
-          <v-spacer />
-          <v-btn depressed class="pos-btn-primary" @click="receipt.open = false">
-            <v-icon left size="17">mdi-cart-plus</v-icon>
+        <div class="dialog__foot">
+          <v-btn depressed block class="btn-primary btn-tall" @click="receipt.open = false">
+            <v-icon left size="19">mdi-cart-plus</v-icon>
             Nueva venta
           </v-btn>
         </div>
@@ -185,6 +191,7 @@
 import saleService from '@/services/saleService';
 import { formatCurrency } from '@/utils/format';
 import { fromCents, lineTotalCents, isValidPrice, toCents } from '@/utils/money';
+import { fallbackGradient, initials } from '@/utils/productImage';
 
 export default {
   name: 'SalePanel',
@@ -195,6 +202,7 @@ export default {
     errorMessage: '',
     clearDialog: false,
     receipt: { open: false, sale: null },
+    failedImages: {},
     // Identificador local del renglón: dos renglones pueden referir al mismo
     // producto con precios distintos, así que el productId no sirve como clave.
     nextKey: 1,
@@ -221,15 +229,40 @@ export default {
     editedCount() {
       return this.items.filter((item) => this.isEdited(item)).length;
     },
+
+    /**
+     * Unidades por producto. El catálogo lo usa para mostrar el contador sobre
+     * la tarjeta correspondiente.
+     */
+    quantityByProduct() {
+      return this.items.reduce((acc, item) => {
+        acc[item.productId] = (acc[item.productId] || 0) + item.quantity;
+        return acc;
+      }, {});
+    },
+  },
+
+  watch: {
+    // El catálogo vive en otra rama del árbol, así que el mapa se anuncia hacia
+    // arriba en lugar de leerse por referencia.
+    quantityByProduct: {
+      immediate: true,
+      handler(map) {
+        this.$emit('cart-changed', map);
+      },
+    },
   },
 
   methods: {
     formatCurrency,
 
+    gradientFor: fallbackGradient,
+    initialsFor: initials,
+
     /**
      * Un renglón cuyo precio difiere del de catálogo. Se señala con color,
-     * franja lateral y etiqueta a la vez: confundir el precio de la venta con
-     * el del catálogo cuesta dinero, y el color por sí solo no es accesible.
+     * franja y etiqueta a la vez: confundir el precio de la venta con el del
+     * catálogo cuesta dinero, y el color por sí solo no es accesible.
      */
     isEdited(item) {
       const actual = toCents(item.unitPrice);
@@ -260,6 +293,7 @@ export default {
           productId: product.id,
           name: product.name,
           barcode: product.barcode,
+          imageUrl: product.imageUrl || null,
           unitPrice: product.price,
           // Se conserva el precio de catálogo para poder señalar después si el
           // cajero lo ajustó, y mostrar cuál era.
@@ -270,6 +304,20 @@ export default {
       }
 
       this.errorMessage = '';
+    },
+
+    /**
+     * Quita una unidad del producto desde el catálogo. Actúa sobre el último
+     * renglón que lo contiene, y lo elimina si se queda sin unidades.
+     */
+    decreaseProduct(product) {
+      for (let i = this.items.length - 1; i >= 0; i -= 1) {
+        if (this.items[i].productId === product.id) {
+          if (this.items[i].quantity > 1) this.items[i].quantity -= 1;
+          else this.items.splice(i, 1);
+          return;
+        }
+      }
     },
 
     updatePrice(index, value) {
@@ -331,77 +379,58 @@ export default {
 </script>
 
 <style scoped>
-.pos-count-strong {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--pos-primary);
-  background: var(--pos-primary-soft);
-  border-radius: 999px;
-  padding: 2px 10px;
-}
-
-.pos-line__main {
-  flex: 1 1 auto;
+.min-width-0 {
   min-width: 0;
 }
 
-.pos-line__sub {
+.line__code {
   display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 3px;
-}
-
-.pos-line__controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-top: 9px;
-}
-
-.pos-line__x {
-  color: var(--pos-text-faint);
-  font-size: 0.875rem;
-}
-
-.pos-total__flag {
-  display: inline-flex;
   align-items: center;
   gap: 4px;
+  font-family: ui-monospace, Menlo, monospace;
   font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--pos-accent);
+  color: var(--pos-text-faint);
+  margin-top: 2px;
 }
 
-.pos-actions {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px 14px;
-  background: var(--pos-surface);
-  border-top: 1px solid var(--pos-border);
-}
-
-.pos-btn-clear {
+.sale__foot {
   flex: 0 0 auto;
-  height: 50px !important;
-  color: var(--pos-text-muted) !important;
+  padding: 4px 16px 16px;
 }
 
-/* `block` de Vuetify aplica ancho 100% del contenedor sin descontar el botón
-   hermano, lo que desbordaba el panel. Con flex ocupa el espacio restante. */
-.pos-actions .pos-btn-save {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.pos-kbd--on-primary {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.28);
+.kbd--on-primary {
+  background: rgba(255, 255, 255, 0.2);
   color: #fff;
 }
 
-.pos-dialog__text {
+/* Cabecera del comprobante: confirma de un vistazo, sin leer. */
+.receipt__hero {
+  background: var(--pos-primary);
+  padding: 26px 22px 22px;
+  text-align: center;
+}
+.receipt__check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 12px;
+}
+.receipt__title {
+  font-size: 1.0625rem;
+  font-weight: 650;
+  color: #fff;
+}
+.receipt__folio {
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.82);
+  margin-top: 2px;
+}
+
+.dialog__text {
   font-size: 0.9375rem;
   line-height: 1.55;
   color: var(--pos-text);

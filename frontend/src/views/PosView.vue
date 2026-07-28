@@ -1,22 +1,27 @@
 <template>
-  <v-container fluid class="pa-4 pos-shell">
-    <v-row class="pos-grid">
-      <!-- Catálogo: búsqueda y alta de productos. -->
-      <v-col cols="12" md="7" class="pos-grid__col">
-        <ProductCatalog
-          ref="catalog"
-          @add-to-sale="onAddToSale"
-          @notify="$emit('notify', $event)"
-          @error="$emit('error', $event)"
-        />
-      </v-col>
+  <div class="pos-layout">
+    <!-- Catálogo: búsqueda y rejilla de productos. -->
+    <div class="pos-layout__main">
+      <ProductCatalog
+        ref="catalog"
+        :quantities="quantities"
+        @add-to-sale="onAddToSale"
+        @decrease-in-sale="onDecreaseInSale"
+        @notify="$emit('notify', $event)"
+        @error="$emit('error', $event)"
+      />
+    </div>
 
-      <!-- Venta: carrito, edición de precios y total. -->
-      <v-col cols="12" md="5" class="pos-grid__col">
-        <SalePanel ref="salePanel" @saved="onSaleSaved" @error="$emit('error', $event)" />
-      </v-col>
-    </v-row>
-  </v-container>
+    <!-- Venta: renglones, total y cobro. -->
+    <aside class="pos-layout__aside">
+      <SalePanel
+        ref="salePanel"
+        @cart-changed="quantities = $event"
+        @saved="onSaleSaved"
+        @error="$emit('error', $event)"
+      />
+    </aside>
+  </div>
 </template>
 
 <script>
@@ -27,6 +32,11 @@ export default {
   name: 'PosView',
 
   components: { ProductCatalog, SalePanel },
+
+  data: () => ({
+    /** Unidades por producto en la venta, para el contador de cada tarjeta. */
+    quantities: {},
+  }),
 
   mounted() {
     window.addEventListener('keydown', this.onGlobalKey);
@@ -59,6 +69,10 @@ export default {
       this.$refs.salePanel.addProduct(product);
     },
 
+    onDecreaseInSale(product) {
+      this.$refs.salePanel.decreaseProduct(product);
+    },
+
     onSaleSaved(sale) {
       this.$emit('notify', `Venta ${sale.folio} registrada`);
     },
@@ -67,34 +81,41 @@ export default {
 </script>
 
 <style scoped>
-.pos-shell {
-  max-width: 1800px;
+/* Dos columnas de altura completa que hacen scroll por dentro: el total y el
+   botón de cobro nunca quedan fuera de la vista. */
+.pos-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  padding: 16px;
+  height: calc(100vh - 64px);
 }
 
-/* Las dos columnas comparten altura y hacen scroll por dentro, de modo que el
-   total nunca queda fuera de la vista. La separación se deja a los gutters de
-   Vuetify: sumar un `gap` propio a columnas que ya ocupan el 100% desborda el
-   viewport horizontalmente. */
-.pos-grid {
-  flex-wrap: nowrap;
-}
-.pos-grid__col {
-  height: calc(100vh - 88px);
-  min-height: 520px;
+.pos-layout__main,
+.pos-layout__aside {
+  min-height: 0;
   display: flex;
 }
-.pos-grid__col > * {
+.pos-layout__main > *,
+.pos-layout__aside > * {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-@media (max-width: 959px) {
-  .pos-grid {
-    flex-wrap: wrap;
+@media (max-width: 1279px) {
+  .pos-layout {
+    grid-template-columns: minmax(0, 1fr) 330px;
   }
-  .pos-grid__col {
+}
+
+@media (max-width: 959px) {
+  .pos-layout {
+    grid-template-columns: 1fr;
     height: auto;
-    min-height: 0;
+  }
+  .pos-layout__main,
+  .pos-layout__aside {
+    min-height: 460px;
   }
 }
 </style>

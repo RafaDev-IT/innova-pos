@@ -1,21 +1,21 @@
 <template>
-  <v-container fluid class="pa-4 pos-page">
-    <div class="pos-panel">
-      <header class="pos-panel__head">
+  <v-container fluid class="pa-4 page">
+    <div class="panel">
+      <header class="panel__head">
         <v-icon size="18" color="primary">mdi-account-group-outline</v-icon>
-        <span class="pos-panel__title">Usuarios</span>
-        <span v-if="pagination.total" class="pos-count">{{ pagination.total }}</span>
+        <span class="panel__title">Usuarios</span>
+        <span v-if="pagination.total" class="count-chip">{{ pagination.total }}</span>
         <v-spacer />
-        <v-btn depressed class="pos-btn-primary" @click="openCreate">
+        <v-btn depressed class="btn-primary" @click="openCreate">
           <v-icon left size="18">mdi-account-plus-outline</v-icon>
           Nuevo usuario
         </v-btn>
       </header>
 
-      <div class="pos-filters">
+      <div class="filters">
         <v-text-field
           v-model="query"
-          class="pos-search"
+          class="field-pill"
           placeholder="Buscar por nombre o usuario…"
           solo
           flat
@@ -28,7 +28,7 @@
         <v-select
           v-model="roleFilter"
           :items="roleOptions"
-          class="pos-role-filter"
+          class="role-filter"
           placeholder="Todos los roles"
           solo
           flat
@@ -38,36 +38,36 @@
         />
       </div>
 
-      <div class="pos-panel__body pos-scroll">
+      <div class="panel__body scroll">
         <v-alert v-if="errorMessage" type="error" dense text class="ma-4">{{ errorMessage }}</v-alert>
 
         <v-skeleton-loader v-else-if="loading && !users.length" type="list-item-two-line@4" class="pa-2" />
 
         <template v-else-if="users.length">
-          <div v-for="item in users" :key="item.id" class="pos-row pos-row--static">
+          <div v-for="item in users" :key="item.id" class="list-row">
             <v-avatar size="36" :color="item.isActive ? 'primary' : 'grey'" class="flex-shrink-0">
               <span class="white--text font-weight-bold text-caption">{{ initials(item.name) }}</span>
             </v-avatar>
 
-            <div class="pos-row__main">
-              <div class="pos-row__name">
+            <div class="list-row__main">
+              <div class="list-row__title">
                 {{ item.name }}
-                <span v-if="item.id === currentUserId" class="pos-tag-self">tú</span>
+                <span v-if="item.id === currentUserId" class="tag-self">tú</span>
               </div>
-              <div class="pos-row__meta">
-                <span class="pos-barcode">{{ item.username }}</span>
+              <div class="list-row__meta">
+                <span class="code">{{ item.username }}</span>
                 <span v-if="item.email">· {{ item.email }}</span>
               </div>
             </div>
 
-            <span class="pos-role-chip" :class="`pos-role-chip--${item.role}`">{{ roleLabel(item.role) }}</span>
+            <span class="chip-soft" :class="roleChipClass(item.role)">{{ roleLabel(item.role) }}</span>
 
-            <span v-if="!item.isActive" class="pos-inactive-chip">
+            <span v-if="!item.isActive" class="chip-soft">
               <v-icon size="12">mdi-pause-circle-outline</v-icon>
               Inactivo
             </span>
 
-            <div class="pos-row__actions">
+            <div class="list-row__actions">
               <v-btn icon small title="Editar usuario" @click="openEdit(item)">
                 <v-icon size="17">mdi-pencil-outline</v-icon>
               </v-btn>
@@ -84,14 +84,14 @@
           </div>
         </template>
 
-        <div v-else class="pos-empty">
-          <div class="pos-empty__icon">
+        <div v-else class="empty">
+          <div class="empty__icon">
             <v-icon size="26" color="grey">mdi-account-search-outline</v-icon>
           </div>
-          <div class="pos-empty__title">
+          <div class="empty__title">
             {{ query || roleFilter ? 'Sin coincidencias' : 'Aún no hay usuarios' }}
           </div>
-          <div class="pos-empty__hint">
+          <div class="empty__hint">
             {{
               query || roleFilter
                 ? 'Prueba con otro texto o quita el filtro de rol.'
@@ -101,7 +101,7 @@
         </div>
       </div>
 
-      <footer v-if="pagination.hasMore" class="pos-panel__foot">
+      <footer v-if="pagination.hasMore" class="panel__foot">
         <v-btn text small color="primary" :loading="loadingMore" @click="loadMore">
           Cargar más · {{ users.length }} de {{ pagination.total }}
         </v-btn>
@@ -111,22 +111,22 @@
     <UserFormDialog v-model="dialogOpen" :user="editingUser" @saved="onSaved" />
 
     <v-dialog v-model="deleteDialog.open" max-width="430">
-      <div class="v-card pos-dialog">
-        <div class="pos-dialog__head">
-          <div class="pos-dialog__icon pos-dialog__icon--danger">
+      <div class="v-card dialog">
+        <div class="dialog__head">
+          <div class="dialog__icon dialog__icon--danger">
             <v-icon size="19" color="error">mdi-account-off-outline</v-icon>
           </div>
-          <span class="pos-dialog__title">Dar de baja usuario</span>
+          <span class="dialog__title">Dar de baja usuario</span>
         </div>
-        <div class="pos-dialog__body">
-          <p class="pos-dialog__text mb-2">
+        <div class="dialog__body">
+          <p class="dialog__text mb-2">
             <strong>{{ deleteDialog.user && deleteDialog.user.name }}</strong> ya no podrá iniciar sesión.
           </p>
-          <p class="pos-dialog__note mb-0">
+          <p class="dialog__note mb-0">
             Sus ventas y su rastro en la bitácora se conservan: la baja es lógica, no un borrado.
           </p>
         </div>
-        <div class="pos-dialog__foot">
+        <div class="dialog__foot">
           <v-spacer />
           <v-btn text @click="deleteDialog.open = false">Cancelar</v-btn>
           <v-btn color="error" depressed :loading="deleteDialog.saving" @click="performDelete">
@@ -202,6 +202,11 @@ export default {
   methods: {
     roleLabel(role) {
       return ROLE_LABELS[role] || role;
+    },
+
+    /** El rol se distingue por color y por texto, nunca solo por color. */
+    roleChipClass(role) {
+      return { admin: 'chip-amber', supervisor: 'chip-green', cashier: '' }[role] || '';
     },
 
     initials(name) {
@@ -289,37 +294,31 @@ export default {
 </script>
 
 <style scoped>
-.pos-page {
+.page {
   max-width: 1100px;
 }
 
-.pos-panel {
+.panel {
   height: calc(100vh - 88px);
   min-height: 480px;
 }
 
-.pos-filters {
+.filters {
   display: flex;
   gap: 10px;
   padding: 12px 16px;
 }
-.pos-role-filter {
+.role-filter {
   max-width: 190px;
 }
-.pos-role-filter >>> .v-input__slot {
+.role-filter >>> .v-input__slot {
   border-radius: var(--pos-r-md) !important;
   min-height: 46px !important;
   background: var(--pos-surface-sunken) !important;
 }
 
-.pos-row--static {
-  cursor: default;
-}
-.pos-row--static:hover {
-  background: transparent;
-}
 
-.pos-count {
+.count-chip {
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--pos-text-faint);
@@ -329,40 +328,9 @@ export default {
   padding: 1px 8px;
 }
 
-/* El rol se distingue por color y por texto: nunca solo por color. */
-.pos-role-chip {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  padding: 3px 9px;
-  border-radius: 999px;
-  white-space: nowrap;
-}
-.pos-role-chip--admin {
-  background: var(--pos-accent-soft);
-  color: var(--pos-accent);
-}
-.pos-role-chip--supervisor {
-  background: var(--pos-primary-soft);
-  color: var(--pos-primary);
-}
-.pos-role-chip--cashier {
-  background: var(--pos-surface-sunken);
-  color: var(--pos-text-muted);
-}
 
-.pos-inactive-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--pos-text-faint);
-  white-space: nowrap;
-}
 
-.pos-tag-self {
+.tag-self {
   font-size: 0.625rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -375,18 +343,18 @@ export default {
   vertical-align: 1px;
 }
 
-.pos-panel__foot {
+.panel__foot {
   border-top: 1px solid var(--pos-border);
   text-align: center;
   padding: 6px;
 }
 
-.pos-dialog__text {
+.dialog__text {
   font-size: 0.9375rem;
   line-height: 1.55;
   color: var(--pos-text);
 }
-.pos-dialog__note {
+.dialog__note {
   font-size: 0.8125rem;
   color: var(--pos-text-faint);
   line-height: 1.5;

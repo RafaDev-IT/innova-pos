@@ -37,6 +37,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      imageUrl: {
+        type: DataTypes.STRING(500),
+        allowNull: true,
+        validate: {
+          isUrl: { msg: 'La imagen debe ser una URL válida' },
+        },
+      },
       isActive: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -56,6 +63,10 @@ module.exports = (sequelize, DataTypes) => {
         beforeValidate(product) {
           if (typeof product.name === 'string') product.name = product.name.trim();
           if (typeof product.barcode === 'string') product.barcode = product.barcode.trim();
+          if (typeof product.imageUrl === 'string') {
+            const trimmed = product.imageUrl.trim();
+            product.imageUrl = trimmed === '' ? null : trimmed;
+          }
           if (typeof product.description === 'string') {
             const trimmed = product.description.trim();
             product.description = trimmed === '' ? null : trimmed;
@@ -85,6 +96,7 @@ module.exports = (sequelize, DataTypes) => {
       barcode: values.barcode,
       price: toAmountString(values.price),
       description: values.description ?? null,
+      imageUrl: values.imageUrl ?? null,
       isActive: values.isActive,
       createdAt: values.createdAt,
       updatedAt: values.updatedAt,

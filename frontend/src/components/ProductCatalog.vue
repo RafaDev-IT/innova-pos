@@ -1,22 +1,11 @@
 <template>
-  <div class="pos-panel">
-    <header class="pos-panel__head">
-      <v-icon size="18" color="primary">mdi-package-variant-closed</v-icon>
-      <span class="pos-panel__title">Catálogo</span>
-      <span v-if="pagination.total" class="pos-count">{{ pagination.total }}</span>
-      <v-spacer />
-      <v-btn depressed class="pos-btn-primary" @click="openCreateDialog">
-        <v-icon left size="18">mdi-plus</v-icon>
-        Agregar producto
-      </v-btn>
-    </header>
-
-    <div class="pos-search-wrap">
+  <div class="panel">
+    <div class="catalog__toolbar">
       <v-text-field
         ref="searchField"
         v-model="query"
-        class="pos-search"
-        placeholder="Escanea un código o escribe el nombre del producto…"
+        class="field-pill flex-grow-1"
+        placeholder="Buscar producto o escanear código…"
         solo
         flat
         dense
@@ -28,105 +17,92 @@
         @keydown.enter="handleEnter"
         @click:clear="onQueryChange('')"
       />
+
+      <v-btn depressed class="btn-primary ml-3 btn-tall px-5" @click="openCreateDialog">
+        <v-icon left size="19">mdi-plus</v-icon>
+        Producto
+      </v-btn>
     </div>
 
-    <div class="pos-hint">
+    <div class="catalog__hint">
       <v-icon size="13">mdi-barcode-scan</v-icon>
-      Escanea y presiona <kbd class="pos-kbd">Enter</kbd> para agregar directo a la venta
+      Escanea y presiona <kbd class="kbd mx-1">Enter</kbd> para agregar directo a la venta
+      <v-spacer />
+      <span v-if="pagination.total" class="chip-soft">{{ pagination.total }} productos</span>
     </div>
 
-    <div class="pos-panel__body pos-scroll">
-      <v-alert v-if="errorMessage" type="error" dense text class="ma-4">
-        {{ errorMessage }}
-      </v-alert>
+    <div class="panel__body scroll px-4 pb-4">
+      <v-alert v-if="errorMessage" type="error" dense text class="mb-4">{{ errorMessage }}</v-alert>
 
-      <v-skeleton-loader v-else-if="loading && !products.length" type="list-item-two-line@5" class="pa-2" />
+      <div v-else-if="loading && !products.length" class="catalog__grid">
+        <v-skeleton-loader v-for="n in 8" :key="n" type="image, list-item-two-line" class="card" />
+      </div>
 
-      <template v-else-if="products.length">
-        <div
+      <div v-else-if="products.length" class="catalog__grid">
+        <ProductCard
           v-for="product in products"
           :key="product.id"
-          class="pos-row"
-          role="button"
-          tabindex="0"
-          :title="`Agregar ${product.name} a la venta`"
-          @click="addToSale(product)"
-          @keydown.enter.self="addToSale(product)"
-        >
-          <div class="pos-row__main">
-            <div class="pos-row__name">{{ product.name }}</div>
-            <div class="pos-row__meta">
-              <span class="pos-barcode">{{ product.barcode }}</span>
-              <span v-if="product.description" class="pos-row__desc">· {{ product.description }}</span>
-            </div>
-          </div>
+          :product="product"
+          :quantity="quantities[product.id] || 0"
+          @add="$emit('add-to-sale', $event)"
+          @increase="$emit('add-to-sale', $event)"
+          @decrease="$emit('decrease-in-sale', $event)"
+          @edit="openEditDialog"
+          @remove="confirmDelete"
+        />
+      </div>
 
-          <div class="pos-row__price">{{ formatCurrency(product.price) }}</div>
-
-          <div class="pos-row__actions">
-            <v-btn icon small title="Editar producto" @click.stop="openEditDialog(product)">
-              <v-icon size="17">mdi-pencil-outline</v-icon>
-            </v-btn>
-            <v-btn icon small title="Dar de baja" @click.stop="confirmDelete(product)">
-              <v-icon size="17">mdi-trash-can-outline</v-icon>
-            </v-btn>
-            <v-btn icon small color="primary" title="Agregar a la venta" @click.stop="addToSale(product)">
-              <v-icon size="20">mdi-plus-circle</v-icon>
-            </v-btn>
-          </div>
+      <div v-else class="empty">
+        <div class="empty__icon">
+          <v-icon size="28" color="primary">{{ query ? 'mdi-magnify-close' : 'mdi-package-variant' }}</v-icon>
         </div>
-      </template>
-
-      <div v-else class="pos-empty">
-        <div class="pos-empty__icon">
-          <v-icon size="26" color="grey">{{ query ? 'mdi-magnify-close' : 'mdi-package-variant' }}</v-icon>
-        </div>
-        <div class="pos-empty__title">
-          {{ query ? 'Sin coincidencias' : 'El catálogo está vacío' }}
-        </div>
-        <div class="pos-empty__hint">
+        <div class="empty__title">{{ query ? 'Sin coincidencias' : 'El catálogo está vacío' }}</div>
+        <div class="empty__hint">
           {{
             query
-              ? `Ningún producto coincide con "${query}". Revisa el texto o registra el producto.`
-              : 'Registra tu primer producto para empezar a vender. Solo necesitas nombre, código de barras y precio.'
+              ? `Ningún producto coincide con "${query}".`
+              : 'Registra tu primer producto para empezar a vender.'
           }}
         </div>
         <v-btn v-if="query" text small color="primary" class="mt-3" @click="onQueryChange('')">
           Limpiar búsqueda
         </v-btn>
-        <v-btn v-else depressed small class="pos-btn-primary mt-3" @click="openCreateDialog">
+        <v-btn v-else depressed small class="btn-primary mt-4 px-5" @click="openCreateDialog">
           <v-icon left size="16">mdi-plus</v-icon>
           Agregar producto
         </v-btn>
       </div>
-    </div>
 
-    <footer v-if="pagination.hasMore" class="pos-panel__foot">
-      <v-btn text small color="primary" :loading="loadingMore" @click="loadMore">
-        Cargar más · {{ products.length }} de {{ pagination.total }}
-      </v-btn>
-    </footer>
+      <div v-if="pagination.hasMore" class="text-center pt-4">
+        <v-btn text small color="primary" :loading="loadingMore" @click="loadMore">
+          Cargar más · {{ products.length }} de {{ pagination.total }}
+        </v-btn>
+      </div>
+    </div>
 
     <ProductFormDialog v-model="dialogOpen" :product="editingProduct" @saved="onProductSaved" />
 
     <v-dialog v-model="deleteDialog.open" max-width="430">
-      <div class="v-card pos-dialog">
-        <div class="pos-dialog__head">
-          <div class="pos-dialog__icon pos-dialog__icon--danger">
-            <v-icon size="19" color="error">mdi-trash-can-outline</v-icon>
+      <div class="dialog">
+        <div class="dialog__head">
+          <div class="dialog__icon dialog__icon--danger">
+            <v-icon size="20" color="error">mdi-trash-can-outline</v-icon>
           </div>
-          <span class="pos-dialog__title">Dar de baja producto</span>
+          <div>
+            <div class="dialog__title">Dar de baja producto</div>
+            <div class="dialog__sub">Dejará de aparecer en el catálogo</div>
+          </div>
         </div>
-        <div class="pos-dialog__body">
-          <p class="pos-dialog__text mb-2">
-            <strong>{{ deleteDialog.product && deleteDialog.product.name }}</strong>
-            dejará de aparecer en el catálogo y no podrá agregarse a nuevas ventas.
+        <div class="dialog__body">
+          <p class="dialog__text mb-2">
+            <strong>{{ deleteDialog.product && deleteDialog.product.name }}</strong> no podrá agregarse a nuevas
+            ventas.
           </p>
-          <p class="pos-dialog__note mb-0">
+          <p class="dialog__note mb-0">
             Las ventas ya registradas lo conservan intacto, con el precio al que se cobró.
           </p>
         </div>
-        <div class="pos-dialog__foot">
+        <div class="dialog__foot">
           <v-spacer />
           <v-btn text @click="deleteDialog.open = false">Cancelar</v-btn>
           <v-btn color="error" depressed :loading="deleteDialog.saving" @click="performDelete">
@@ -141,15 +117,20 @@
 <script>
 import productService from '@/services/productService';
 import ProductFormDialog from '@/components/ProductFormDialog.vue';
-import { formatCurrency } from '@/utils/format';
+import ProductCard from '@/components/ProductCard.vue';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 24;
 const DEBOUNCE_MS = 300;
 
 export default {
   name: 'ProductCatalog',
 
-  components: { ProductFormDialog },
+  components: { ProductFormDialog, ProductCard },
+
+  props: {
+    /** Unidades por producto ya presentes en la venta, indexadas por id. */
+    quantities: { type: Object, default: () => ({}) },
+  },
 
   data: () => ({
     query: '',
@@ -181,8 +162,6 @@ export default {
   },
 
   methods: {
-    formatCurrency,
-
     /** Devuelve el cursor al buscador (atajo F2). */
     focusSearch() {
       const field = this.$refs.searchField;
@@ -301,38 +280,37 @@ export default {
 </script>
 
 <style scoped>
-.pos-search-wrap {
-  padding: 12px 16px 0;
+.catalog__toolbar {
+  display: flex;
+  align-items: center;
+  padding: 16px 16px 8px;
+  flex: 0 0 auto;
 }
 
-.pos-count {
+.catalog__hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.75rem;
-  font-weight: 600;
   color: var(--pos-text-faint);
-  background: var(--pos-surface-sunken);
-  border: 1px solid var(--pos-border);
-  border-radius: 999px;
-  padding: 1px 8px;
+  padding: 4px 20px 12px;
+  flex: 0 0 auto;
 }
 
-.pos-row__desc {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Rejilla fluida: tantas columnas como quepan sin bajar de 168 px de ancho,
+   para que la tarjeta siga siendo legible en tablet. */
+.catalog__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 14px;
 }
 
-.pos-panel__foot {
-  border-top: 1px solid var(--pos-border);
-  text-align: center;
-  padding: 6px;
-}
-
-.pos-dialog__text {
+.dialog__text {
   font-size: 0.9375rem;
   line-height: 1.55;
   color: var(--pos-text);
 }
-.pos-dialog__note {
+.dialog__note {
   font-size: 0.8125rem;
   color: var(--pos-text-faint);
   line-height: 1.5;

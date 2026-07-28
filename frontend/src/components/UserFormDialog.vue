@@ -1,19 +1,19 @@
 <template>
   <v-dialog v-model="isOpen" max-width="520" persistent @keydown.esc="close">
-    <div class="v-card pos-dialog">
-      <div class="pos-dialog__head">
-        <div class="pos-dialog__icon pos-dialog__icon--primary">
+    <div class="v-card dialog">
+      <div class="dialog__head">
+        <div class="dialog__icon dialog__icon--primary">
           <v-icon size="19" color="primary">{{ isEditing ? 'mdi-account-edit-outline' : 'mdi-account-plus-outline' }}</v-icon>
         </div>
         <div>
-          <div class="pos-dialog__title">{{ isEditing ? 'Editar usuario' : 'Nuevo usuario' }}</div>
-          <div class="pos-dialog__subtitle">
+          <div class="dialog__title">{{ isEditing ? 'Editar usuario' : 'Nuevo usuario' }}</div>
+          <div class="dialog__sub">
             {{ isEditing ? 'Deja la contraseña en blanco para conservarla' : 'Podrá iniciar sesión de inmediato' }}
           </div>
         </div>
       </div>
 
-      <div class="pos-dialog__body">
+      <div class="dialog__body">
         <v-form ref="form" v-model="isFormValid" @submit.prevent="submit">
           <v-text-field
             v-model="form.name"
@@ -93,7 +93,7 @@
             class="mt-4 mb-2"
             :disabled="isSelf"
           />
-          <p v-if="isSelf" class="pos-dialog__note mb-0">
+          <p v-if="isSelf" class="dialog__note mb-0">
             No puedes desactivar ni cambiar el rol de tu propia cuenta.
           </p>
 
@@ -105,10 +105,10 @@
         </v-form>
       </div>
 
-      <div class="pos-dialog__foot">
+      <div class="dialog__foot">
         <v-spacer />
         <v-btn text :disabled="saving" @click="close">Cancelar</v-btn>
-        <v-btn depressed class="pos-btn-primary" :loading="saving" @click="submit">
+        <v-btn depressed class="btn-primary" :loading="saving" @click="submit">
           {{ isEditing ? 'Guardar cambios' : 'Crear usuario' }}
         </v-btn>
       </div>
@@ -282,14 +282,14 @@ export default {
 </script>
 
 <style scoped>
-.pos-dialog__subtitle {
+.dialog__sub {
   font-size: 0.78125rem;
   color: var(--pos-text-faint);
   margin-top: 1px;
   line-height: 1.4;
 }
 
-.pos-dialog__note {
+.dialog__note {
   font-size: 0.78125rem;
   color: var(--pos-text-faint);
 }
