@@ -1,5 +1,7 @@
 const { Router } = require('express');
 
+const productRoutes = require('./productRoutes');
+
 const router = Router();
 
 /**
@@ -16,5 +18,7 @@ router.get('/health', (_req, res) => {
     },
   });
 });
+
+router.use('/products', productRoutes);
 
 module.exports = router;

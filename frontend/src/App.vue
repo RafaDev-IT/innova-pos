@@ -15,10 +15,11 @@
         <v-row>
           <!-- Columna de catálogo: búsqueda y alta de productos. -->
           <v-col cols="12" md="7">
-            <v-card outlined class="pa-6 text-center grey--text">
-              <v-icon size="48" color="grey lighten-1">mdi-package-variant</v-icon>
-              <div class="mt-2">Módulo de productos</div>
-            </v-card>
+            <ProductCatalog
+              @add-to-sale="onAddToSale"
+              @notify="notify($event)"
+              @error="notify($event, 'error')"
+            />
           </v-col>
 
           <!-- Columna de venta: carrito, edición de precios y total. -->
@@ -43,9 +44,12 @@
 
 <script>
 import http from '@/services/http';
+import ProductCatalog from '@/components/ProductCatalog.vue';
 
 export default {
   name: 'App',
+
+  components: { ProductCatalog },
 
   data: () => ({
     apiOnline: false,
@@ -74,6 +78,14 @@ export default {
     /** Punto único de notificaciones: los módulos hijos emiten hacia aquí. */
     notify(message, color = 'success') {
       this.notification = { visible: true, message, color };
+    },
+
+    /**
+     * El catálogo solo anuncia qué producto se eligió; el módulo de venta es
+     * quien decide cómo incorporarlo al carrito.
+     */
+    onAddToSale(product) {
+      this.notify(`"${product.name}" seleccionado`);
     },
   },
 };
