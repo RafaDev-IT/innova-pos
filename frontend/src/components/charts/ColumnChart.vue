@@ -1,6 +1,6 @@
 <template>
   <div class="chart" @mouseleave="hovered = null">
-    <svg :viewBox="`0 0 ${W} ${H}`" width="100%" :height="height" role="img" :aria-label="ariaLabel">
+    <svg :viewBox="`0 0 ${W} ${H}`" width="100%" :height="H" role="img" :aria-label="ariaLabel">
       <!-- Rejilla horizontal: fina, continua y recesiva. Nunca punteada, que
            compite en peso visual con los datos. -->
       <g>
@@ -83,8 +83,7 @@
  * sencillas, una dependencia añade cientos de kilobytes al paquete y quita el
  * control sobre las especificaciones de marca.
  */
-const W = 720;
-const H = 220;
+const W_POR_DEFECTO = 720;
 const PAD_R = 10;
 const PAD_T = 12;
 const PAD_B = 24;
@@ -97,15 +96,33 @@ export default {
   props: {
     /** [{ label, value, caption }] */
     points: { type: Array, required: true },
-    height: { type: [Number, String], default: 220 },
+    height: { type: Number, default: 220 },
     ariaLabel: { type: String, default: 'Gráfica de columnas' },
     /** Formatea el valor para eje y etiqueta flotante. */
     format: { type: Function, default: (v) => String(v) },
   },
 
-  data: () => ({ W, H, PAD_R, PAD_T, hovered: null }),
+  data: () => ({
+    PAD_R,
+    PAD_T,
+    hovered: null,
+    /**
+     * Ancho real del contenedor.
+     *
+     * El viewBox se ajusta a esta medida en lugar de dejar que el SVG se
+     * escale: con un viewBox fijo, colocar la gráfica a media pantalla encoge
+     * el texto del eje hasta hacerlo ilegible y deja una franja vacía por la
+     * diferencia de proporción entre el viewBox y la caja renderizada.
+     */
+    W: W_POR_DEFECTO,
+    observador: null,
+  }),
 
   computed: {
+    H() {
+      return this.height;
+    },
+
     /**
      * Margen izquierdo calculado a partir de la etiqueta más larga del eje.
      * Con un valor fijo, "$300.00" se recorta contra el borde y se lee "¡300.00".
@@ -116,11 +133,11 @@ export default {
     },
 
     plotW() {
-      return W - this.PAD_L - PAD_R;
+      return this.W - this.PAD_L - PAD_R;
     },
 
     plotH() {
-      return H - PAD_T - PAD_B;
+      return this.H - PAD_T - PAD_B;
     },
 
     max() {
@@ -192,7 +209,7 @@ export default {
       if (!bar) return null;
 
       // Se sujeta a los bordes para que la etiqueta no se salga del panel.
-      const porcentaje = Math.min(Math.max((bar.cx / W) * 100, 6), 94);
+      const porcentaje = Math.min(Math.max((bar.cx / this.W) * 100, 6), 94);
       return {
         value: this.format(bar.value),
         caption: `${bar.label}${bar.caption ? ` · ${bar.caption}` : ''}`,
@@ -202,6 +219,30 @@ export default {
           transform: 'translateX(-50%)',
         },
       };
+    },
+  },
+
+  mounted() {
+    this.medir();
+    if (window.ResizeObserver) {
+      this.observador = new ResizeObserver(() => this.medir());
+      this.observador.observe(this.$el);
+    } else {
+      // Sin ResizeObserver se cae al evento de ventana, menos preciso pero
+      // suficiente: cubre el cambio de tamaño y la rotación del dispositivo.
+      window.addEventListener('resize', this.medir);
+    }
+  },
+
+  beforeDestroy() {
+    if (this.observador) this.observador.disconnect();
+    else window.removeEventListener('resize', this.medir);
+  },
+
+  methods: {
+    medir() {
+      const ancho = this.$el ? this.$el.clientWidth : 0;
+      if (ancho > 0) this.W = Math.round(ancho);
     },
   },
 };
