@@ -1095,3 +1095,41 @@
   border-radius: var(--r-md);
   background: var(--pos-surface-2);
 }
+
+/* =============================================================================
+   CAMPOS DE FECHA
+   -----------------------------------------------------------------------------
+   El indicador del selector nativo se dibuja al final del input y, dentro de un
+   campo outlined de Vuetify, acaba montado sobre el borde. Se le reserva aire a
+   su derecha y se le da el color del tema, porque el icono nativo es oscuro y
+   resulta invisible sobre superficie oscura.
+   ============================================================================= */
+
+.v-application input[type='date'] {
+  padding-right: 6px;
+}
+
+.v-application input[type='date']::-webkit-calendar-picker-indicator {
+  margin-left: 6px;
+  padding: 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.12s ease, background 0.12s ease;
+}
+.v-application input[type='date']::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  background: var(--pos-surface-2);
+}
+
+.theme--dark input[type='date']::-webkit-calendar-picker-indicator {
+  /* El icono viene en negro fijo; invertirlo lo hace legible en tema oscuro. */
+  filter: invert(1);
+  opacity: 0.6;
+}
+
+/* Ancho mínimo cómodo: por debajo de esto la fecha y su icono se aprietan. */
+.field-date {
+  min-width: 168px;
+  max-width: 180px;
+}

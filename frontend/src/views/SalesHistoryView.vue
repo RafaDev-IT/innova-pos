@@ -14,9 +14,9 @@
         :loading="loading"
       />
 
-      <v-text-field v-model="filtros.from" type="date" label="Desde" outlined dense hide-details class="filters__date" @change="recargar" />
+      <v-text-field v-model="filtros.from" type="date" label="Desde" outlined dense hide-details class="field-date" @change="recargar" />
       <span class="mx-1 text--secondary">→</span>
-      <v-text-field v-model="filtros.to" type="date" label="Hasta" outlined dense hide-details class="filters__date" @change="recargar" />
+      <v-text-field v-model="filtros.to" type="date" label="Hasta" outlined dense hide-details class="field-date" @change="recargar" />
 
       <v-select
         v-model="filtros.status"
@@ -365,9 +365,6 @@ export default {
 .filters__search {
   flex: 1 1 240px;
   min-width: 200px;
-}
-.filters__date {
-  max-width: 158px;
 }
 .filters__select {
   max-width: 168px;
