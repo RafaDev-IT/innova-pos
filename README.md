@@ -10,6 +10,7 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 ## Índice
 
 - [Funcionalidades](#funcionalidades)
+- [Interfaz](#interfaz)
 - [Stack](#stack)
 - [Puesta en marcha](#puesta-en-marcha)
 - [Modelo de datos](#modelo-de-datos)
@@ -181,7 +182,7 @@ Los importes viajan siempre como string con dos decimales (`"18.50"`), nunca com
 
 ```bash
 cd backend  && npm test     # 67 pruebas — Jest + Supertest sobre PostgreSQL real
-cd frontend && npm test     # 46 pruebas — Vitest + Vue Test Utils
+cd frontend && npm test     # 56 pruebas — Vitest + Vue Test Utils
 ```
 
 Las pruebas del backend corren contra una base PostgreSQL de verdad, no contra un motor
@@ -219,6 +220,7 @@ innova-pos/
 │       └── utils/           aritmética en centavos y formato
 ├── database/schema.sql      esquema completo en SQL plano
 ├── docs/API.md              referencia de la API
+├── docs/DESIGN.md           sistema de diseño y decisiones visuales
 └── docker-compose.yml       PostgreSQL para desarrollo
 ```
 
