@@ -18,7 +18,16 @@
         @click:clear="onQueryChange('')"
       />
 
-      <v-btn depressed class="btn-primary ml-3 btn-tall px-5" @click="openCreateDialog">
+      <v-btn
+        depressed
+        class="btn-surface ml-3"
+        title="Escanear con la cámara"
+        @click="scannerAbierto = true"
+      >
+        <v-icon size="21">mdi-barcode-scan</v-icon>
+      </v-btn>
+
+      <v-btn depressed class="btn-primary ml-2 btn-tall px-5" @click="openCreateDialog">
         <v-icon left size="19">mdi-plus</v-icon>
         Producto
       </v-btn>
@@ -82,6 +91,8 @@
 
     <ProductFormDialog v-model="dialogOpen" :product="editingProduct" @saved="onProductSaved" />
 
+    <BarcodeScanner v-model="scannerAbierto" @scanned="onEscaneado" />
+
     <v-dialog v-model="deleteDialog.open" max-width="430">
       <div class="dialog">
         <div class="dialog__head">
@@ -118,6 +129,7 @@
 import productService from '@/services/productService';
 import ProductFormDialog from '@/components/ProductFormDialog.vue';
 import ProductCard from '@/components/ProductCard.vue';
+import BarcodeScanner from '@/components/BarcodeScanner.vue';
 
 const PAGE_SIZE = 24;
 const DEBOUNCE_MS = 300;
@@ -125,7 +137,7 @@ const DEBOUNCE_MS = 300;
 export default {
   name: 'ProductCatalog',
 
-  components: { ProductFormDialog, ProductCard },
+  components: { ProductFormDialog, ProductCard, BarcodeScanner },
 
   props: {
     /** Unidades por producto ya presentes en la venta, indexadas por id. */
@@ -142,6 +154,7 @@ export default {
     dialogOpen: false,
     editingProduct: null,
     deleteDialog: { open: false, product: null, saving: false },
+    scannerAbierto: false,
     debounceTimer: null,
     // Descarta respuestas de búsquedas obsoletas que lleguen fuera de orden.
     requestId: 0,
@@ -240,6 +253,25 @@ export default {
 
     addToSale(product) {
       this.$emit('add-to-sale', product);
+    },
+
+    /**
+     * Código leído con la cámara. Se busca y, si hay coincidencia exacta, se
+     * agrega directo a la venta: es el mismo gesto que con una pistola lectora.
+     */
+    async onEscaneado(codigo) {
+      this.query = codigo;
+      clearTimeout(this.debounceTimer);
+      await this.fetchProducts();
+
+      const exacto = this.products.find((p) => p.barcode === codigo);
+      if (exacto) {
+        this.addToSale(exacto);
+        this.query = '';
+        return;
+      }
+
+      this.$emit('notify', `No hay ningún producto con el código ${codigo}`);
     },
 
     openCreateDialog() {
