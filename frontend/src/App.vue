@@ -1,0 +1,86 @@
+<template>
+  <v-app>
+    <v-app-bar app color="primary" dark flat height="60">
+      <v-icon large class="mr-3">mdi-point-of-sale</v-icon>
+      <v-toolbar-title class="text-h6 font-weight-bold">Innova POS</v-toolbar-title>
+      <v-spacer />
+      <v-chip small outlined :color="apiOnline ? 'white' : 'error'">
+        <v-icon left small>{{ apiOnline ? 'mdi-check-circle' : 'mdi-alert-circle' }}</v-icon>
+        {{ apiOnline ? 'API conectada' : 'API sin conexión' }}
+      </v-chip>
+    </v-app-bar>
+
+    <v-main class="grey lighten-4">
+      <v-container fluid class="pa-4">
+        <v-row>
+          <!-- Columna de catálogo: búsqueda y alta de productos. -->
+          <v-col cols="12" md="7">
+            <v-card outlined class="pa-6 text-center grey--text">
+              <v-icon size="48" color="grey lighten-1">mdi-package-variant</v-icon>
+              <div class="mt-2">Módulo de productos</div>
+            </v-card>
+          </v-col>
+
+          <!-- Columna de venta: carrito, edición de precios y total. -->
+          <v-col cols="12" md="5">
+            <v-card outlined class="pa-6 text-center grey--text">
+              <v-icon size="48" color="grey lighten-1">mdi-cart-outline</v-icon>
+              <div class="mt-2">Módulo de venta</div>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-main>
+
+    <v-snackbar v-model="notification.visible" :color="notification.color" :timeout="4000" bottom right>
+      {{ notification.message }}
+      <template #action="{ attrs }">
+        <v-btn text v-bind="attrs" @click="notification.visible = false">Cerrar</v-btn>
+      </template>
+    </v-snackbar>
+  </v-app>
+</template>
+
+<script>
+import http from '@/services/http';
+
+export default {
+  name: 'App',
+
+  data: () => ({
+    apiOnline: false,
+    notification: {
+      visible: false,
+      message: '',
+      color: 'success',
+    },
+  }),
+
+  created() {
+    this.checkApiHealth();
+  },
+
+  methods: {
+    async checkApiHealth() {
+      try {
+        await http.get('/health');
+        this.apiOnline = true;
+      } catch (error) {
+        this.apiOnline = false;
+        this.notify(error.message, 'error');
+      }
+    },
+
+    /** Punto único de notificaciones: los módulos hijos emiten hacia aquí. */
+    notify(message, color = 'success') {
+      this.notification = { visible: true, message, color };
+    },
+  },
+};
+</script>
+
+<style>
+html {
+  overflow-y: auto;
+}
+</style>
