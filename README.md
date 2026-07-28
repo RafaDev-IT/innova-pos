@@ -1,14 +1,63 @@
-# Innova POS — Punto de venta básico
+# Innova POS — Punto de venta
 
-Aplicación web de una sola pantalla para administrar productos y registrar ventas.
-Incluye frontend, backend y persistencia en base de datos relacional.
+Sistema de punto de venta para una tienda de barrio: catálogo de productos,
+registro de ventas, historial con ticket, tablero, reportería y bitácora de
+auditoría. Con autenticación por roles, instalable como aplicación y en hora de
+El Salvador.
 
-> Esta es la rama **`ProductionEnv`**, con los dos entregables integrados.
+> Esta es la rama **`ProductionEnv`**, con todos los entregables integrados.
+
+---
+
+## Cómo levantar el proyecto
+
+**Un solo comando.** Requiere únicamente Docker y Docker Compose — no hace falta
+tener Node instalado ni conectarse a ninguna base de datos remota.
+
+```bash
+git clone https://github.com/RafaDev-IT/innova-pos.git
+cd innova-pos
+docker compose up --build
+```
+
+Eso levanta base de datos, API y frontend, aplica las migraciones y siembra los
+datos de demostración. Cuando termine:
+
+| | |
+|---|---|
+| **Aplicación** | <http://localhost:8080> |
+| API | <http://localhost:3000/api> |
+| PostgreSQL | `localhost:5432` |
+
+Entra con cualquiera de estas cuentas —aparecen en la propia pantalla de acceso,
+basta pulsar una—:
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `admin` | `Admin.Innova2026` | Administrador |
+| `supervisor` | `Super.Innova2026` | Supervisor |
+| `cajero` | `Cajero.Innova2026` | Cajero |
+
+El sistema arranca con **15 productos, 3 usuarios y 30 días de historial**
+(600 ventas), de modo que el tablero y los reportes tengan algo que mostrar
+desde el primer momento.
+
+Si algún puerto está ocupado:
+
+```bash
+API_PORT=3100 WEB_PORT=8081 docker compose up --build
+```
+
+Para empezar de cero, `docker compose down -v` borra el volumen de datos.
+
+> ¿Prefieres ejecutarlo con Node, sin contenedores, o necesitas recarga en
+> caliente para desarrollar? Ver **[Puesta en marcha](#puesta-en-marcha)**.
 
 ---
 
 ## Índice
 
+- [Cómo levantar el proyecto](#cómo-levantar-el-proyecto)
 - [Funcionalidades](#funcionalidades)
 - [Interfaz](#interfaz)
 - [Stack](#stack)
@@ -47,9 +96,26 @@ Panel con los productos agregados mostrando nombre y precio utilizado. Cada reng
 detalle completo.
 
 **Persistencia**
-Tres tablas relacionadas: `products`, `sales` y `sale_items`. El detalle guarda una copia
-del producto al momento de venderse, de modo que editar el catálogo después nunca altera
-una venta ya registrada.
+El detalle de cada venta guarda una copia del producto al momento de venderse, de
+modo que editar el catálogo después nunca altera una venta ya registrada.
+
+### Más allá de lo solicitado
+
+Con el visto bueno del cliente se añadieron los módulos que un punto de venta
+necesita para ser usable de verdad:
+
+| Módulo | Qué resuelve |
+|---|---|
+| **Acceso y roles** | Tres perfiles —administrador, supervisor, cajero— con permisos aplicados en el servidor. Al entrar, cada usuario ve qué puede hacer y qué no |
+| **Tablero** | Indicadores del día, ventas por hora, más vendidos y actividad reciente de cada usuario |
+| **Reportería** | Análisis por período, desempeño por cajero, seguimiento de precios ajustados y exportación a CSV |
+| **Historial de ventas** | Búsqueda por folio, fecha, cajero o estado; ticket completo y anulación con motivo, que se descuenta al instante del tablero y los reportes |
+| **Bitácora de auditoría** | Registro inmutable de quién hizo qué |
+| **Códigos de barras** | EAN-13 generados con dígito verificador, dibujados en pantalla y legibles por cámara |
+| **Aplicación instalable** | Se añade a la pantalla de inicio y funciona sin conexión para consultar |
+
+Todo el sistema opera en **hora de El Salvador**: un reporte por hora responde a
+qué hora vendió la tienda, no a qué hora fue en Greenwich.
 
 ---
 
@@ -93,48 +159,22 @@ MacBook Pro, y verificado midiendo el desbordamiento horizontal en 11 anchos por
 | Base de datos | PostgreSQL 16 |
 | Pruebas | Jest + Supertest (backend) · Vitest + Vue Test Utils (frontend) |
 | Calidad | ESLint + Prettier · GitHub Actions |
+| Entorno | Docker Compose — base, API y frontend en un comando |
+| Despliegue | Firebase Hosting · Render · Supabase |
 
 ---
 
 ## Puesta en marcha
 
-### Todo con Docker (recomendado)
+La forma recomendada —un solo comando con Docker— está al principio de este
+documento: **[Cómo levantar el proyecto](#cómo-levantar-el-proyecto)**. Aquí
+quedan las alternativas.
 
-Único requisito: **Docker y Docker Compose**. No hace falta Node instalado ni
-conexión a ninguna base remota.
-
-```bash
-docker compose up --build
-```
-
-Levanta los tres servicios, aplica las migraciones y siembra los datos de
-demostración en el primer arranque. Al terminar:
-
-| | |
-|---|---|
-| Aplicación | <http://localhost:8080> |
-| API | <http://localhost:3000/api> |
-| PostgreSQL | `localhost:5432` |
-
-Se sirve ya con catálogo, usuarios e historial: **15 productos, 3 usuarios y 30
-días de ventas simuladas**. Las credenciales aparecen en la propia pantalla de
-acceso; basta pulsar una para entrar.
-
-| Usuario | Contraseña | Rol |
-|---|---|---|
-| `admin` | `Admin.Innova2026` | Administrador |
-| `supervisor` | `Super.Innova2026` | Supervisor |
-| `cajero` | `Cajero.Innova2026` | Cajero |
-
-Los puertos se pueden cambiar si alguno está ocupado:
-
-```bash
-API_PORT=3100 WEB_PORT=8081 docker compose up --build
-```
+### Ajustes del entorno con Docker
 
 Reiniciar no duplica nada: las semillas quedan registradas y solo se aplican una
-vez. Para empezar de cero, `docker compose down -v` borra el volumen de datos.
-Con `SEED_DEMO_DATA=false` la base arranca vacía, solo con el administrador.
+vez. Con `SEED_DEMO_DATA=false` la base arranca vacía, únicamente con el
+administrador inicial.
 
 ### Con Node en local (para desarrollar)
 
@@ -373,22 +413,16 @@ las gráficas ofrecen su alternativa en tabla.
 
 ![Diagrama de la base de datos](docs/screenshots/diagrama-base-datos.png)
 
-```
-┌─────────────────────┐         ┌─────────────────────┐         ┌─────────────────────┐
-│      products       │         │     sale_items      │         │        sales        │
-├─────────────────────┤         ├─────────────────────┤         ├─────────────────────┤
-│ id            PK    │◄────────│ product_id   FK ∅   │────────►│ id            PK    │
-│ name                │  SET    │ sale_id      FK     │ CASCADE │ folio       UNIQUE  │
-│ barcode      UNIQUE │  NULL   │                     │         │ subtotal  DEC(10,2) │
-│ price      DEC(10,2)│         │ product_name        │         │ total     DEC(10,2) │
-│ description         │         │ product_barcode     │         │ status              │
-│ is_active           │         │ unit_price DEC(10,2)│         │ item_count          │
-│ deleted_at          │         │ quantity            │         │ sold_at             │
-└─────────────────────┘         │ line_total DEC(10,2)│         └─────────────────────┘
-                                └─────────────────────┘
-                                  ▲ copia del producto
-                                    al momento de la venta
-```
+Cinco tablas de negocio, más las dos que Sequelize usa para llevar el control de
+migraciones y semillas.
+
+| Tabla | Contiene |
+|---|---|
+| `products` | Catálogo. Baja lógica con `deleted_at`, nunca se elimina |
+| `sales` | Cabecera: folio, totales, estado, cajero y datos de anulación |
+| `sale_items` | Renglones de cada venta, con copia del producto |
+| `users` | Cuentas, rol y hash de contraseña |
+| `audit_log` | Bitácora inmutable de quién hizo qué |
 
 **Lo esencial del diseño está en `sale_items`.** Además de referenciar al producto, guarda
 una copia de su nombre, su código de barras y el precio cobrado. Sin esa copia, editar el
@@ -398,10 +432,17 @@ propio del renglón, no una lectura de la tabla de productos.
 
 De ahí se derivan las reglas de integridad:
 
-- `sale_id` es **CASCADE**: un renglón no tiene sentido sin su venta.
-- `product_id` es **nullable con SET NULL**: si el producto desaparece del catálogo, la
-  venta sigue siendo legible.
-- Los productos se dan de baja de forma **lógica** (`deleted_at`), nunca se eliminan.
+| Relación | Regla | Motivo |
+|---|---|---|
+| `sale_items.sale_id` → `sales` | `CASCADE` | Un renglón no significa nada sin su venta |
+| `sale_items.product_id` → `products` | `SET NULL` | Se puede dar de baja un producto sin perder las ventas que lo incluyeron |
+| `sales.user_id` → `users` | `SET NULL` | Un empleado que se va no borra el rastro de lo que vendió |
+| `audit_log.user_id` → `users` | `SET NULL` | Igual, y con copia del nombre para que la bitácora siga siendo legible |
+
+Los productos se dan de baja de forma **lógica** (`deleted_at`); nunca se
+eliminan. Y el folio de la venta sale de una secuencia de PostgreSQL
+(`nextval`), no de un `COUNT(*)`: `nextval` es atómico, mientras que contar filas
+produce folios duplicados en cuanto dos cajas cobran a la vez.
 
 ---
 
@@ -429,8 +470,8 @@ Los importes viajan siempre como string con dos decimales (`"18.50"`), nunca com
 ## Pruebas
 
 ```bash
-cd backend  && npm test     # 67 pruebas — Jest + Supertest sobre PostgreSQL real
-cd frontend && npm test     # 56 pruebas — Vitest + Vue Test Utils
+cd backend  && npm test     # 180 pruebas — Jest + Supertest sobre PostgreSQL real
+cd frontend && npm test     # 106 pruebas — Vitest + Vue Test Utils
 ```
 
 Las pruebas del backend corren contra una base PostgreSQL de verdad, no contra un motor
@@ -441,6 +482,15 @@ Entre lo cubierto: cálculo de totales en el servidor, prevalencia del precio ed
 el de catálogo, ausencia de error de punto flotante al sumar cien renglones, folios
 correlativos, reversión completa de la transacción ante un fallo al insertar el detalle, y
 que una venta ya registrada no se altere al cambiar o dar de baja el producto.
+
+También se verifica el permiso de cada endpoint por rol, la conversión de zona
+horaria en las agregaciones y **el propio seeder**, ejecutado contra un
+`queryInterface` falso para comprobar que todos los códigos de barras que
+produce son EAN-13 válidos: la corrección de los datos sembrados se verifica, no
+se supone.
+
+La configuración de pruebas **no admite `DATABASE_URL`**, de modo que la suite no
+puede truncar tablas en producción aunque la variable esté definida.
 
 ---
 
@@ -459,28 +509,46 @@ que una venta ya registrada no se altere al cambiar o dar de baja el producto.
 
 ```
 innova-pos/
-├── backend/                 API REST
+├── backend/                      API REST — ver backend/README.md
 │   ├── src/
-│   │   ├── config/          entorno y configuración de Sequelize
-│   │   ├── models/          modelos y asociaciones
-│   │   ├── services/        lógica de negocio y transacciones
-│   │   ├── controllers/     adaptadores HTTP
-│   │   ├── routes/          definición de endpoints
-│   │   ├── validators/      reglas de express-validator
-│   │   ├── middlewares/     manejo de errores y validación
-│   │   ├── database/        migraciones y seeders
-│   │   └── utils/           importes, errores, helpers
-│   └── tests/               integración y unitarias
-├── frontend/                SPA Vue 2 + Vuetify
-│   └── src/
-│       ├── components/      ProductCatalog · ProductFormDialog · SalePanel
-│       ├── services/        cliente Axios y servicios de API
-│       ├── plugins/         inicialización de Vuetify
-│       └── utils/           aritmética en centavos y formato
-├── database/schema.sql      esquema completo en SQL plano
-├── docs/API.md              referencia de la API
-├── docs/DESIGN.md           sistema de diseño y decisiones visuales
-└── docker-compose.yml       PostgreSQL para desarrollo
+│   │   ├── config/               entorno, Sequelize y matriz de permisos
+│   │   ├── models/               modelos, hooks y asociaciones
+│   │   ├── services/             lógica de negocio y transacciones
+│   │   ├── controllers/          adaptadores HTTP, sin lógica
+│   │   ├── routes/               endpoints y permiso exigido por cada uno
+│   │   ├── validators/           reglas de express-validator
+│   │   ├── middlewares/          autenticación, permisos, errores
+│   │   ├── database/             migrations/ y seeders/
+│   │   └── utils/                dinero en centavos, EAN-13, errores
+│   ├── tests/                    180 pruebas
+│   ├── Dockerfile
+│   └── docker-entrypoint.sh      migra y siembra antes de servir
+│
+├── frontend/                     SPA Vue 2 — ver frontend/README.md
+│   ├── public/
+│   │   ├── manifest.webmanifest  declaración de la PWA
+│   │   ├── sw.js                 service worker
+│   │   └── icons/                siete tamaños, dos de ellos maskable
+│   ├── src/
+│   │   ├── views/                una por ruta, carga perezosa
+│   │   ├── components/           incluye charts/ en SVG, sin librería
+│   │   ├── services/             cliente HTTP y un servicio por recurso
+│   │   ├── store/                session.js — único estado global
+│   │   ├── styles/               design-system.css: tokens y clases
+│   │   ├── utils/                formato, centavos, EAN-13
+│   │   └── plugins/              Vuetify y temas
+│   ├── tests/                    106 pruebas
+│   ├── Dockerfile                compila con Node, sirve con nginx
+│   ├── nginx.conf                reescritura SPA y cabeceras de caché
+│   └── firebase.json             hosting
+│
+├── database/schema.sql           esquema completo en SQL plano
+├── docs/
+│   ├── API.md                    referencia de endpoints
+│   ├── DESIGN.md                 decisiones visuales y paleta
+│   └── screenshots/
+├── docker-compose.yml            base + API + frontend
+└── render.yaml                   despliegue de la API
 ```
 
 ---
@@ -516,21 +584,36 @@ innova-pos/
 
 ## Estrategia de ramas
 
-| Rama | Contenido |
-|------|-----------|
-| `main` | Scaffold, infraestructura y utilidades compartidas |
-| `feature/products` | **Entregable 1** — administración y búsqueda de productos |
-| `feature/sales` | **Entregable 2** — registro y persistencia de ventas |
-| `ProductionEnv` | Versión final con ambos entregables integrados |
-
-`feature/sales` nace de `feature/products` porque el carrito no puede existir sin el
-dominio de productos: ramificar en secuencia refleja esa dependencia real. Ambos se
-integran en `ProductionEnv` con merges `--no-ff` separados, de modo que la frontera entre
-entregables queda visible en el historial:
+**125 commits en 24 ramas**, cada una con un alcance definido e integrada en
+`ProductionEnv` mediante un merge `--no-ff`. La frontera entre entregables queda
+así visible en el historial:
 
 ```bash
 git log --graph --oneline --all
 ```
+
+| Rama | Contenido |
+|---|---|
+| `main` | Scaffold, infraestructura y utilidades compartidas |
+| `feature/products` | **Entregable 1** — administración y búsqueda de productos |
+| `feature/sales` | **Entregable 2** — registro y persistencia de ventas |
+| `feature/auth` | Usuarios, inicio de sesión, JWT y roles |
+| `feature/analytics` · `feature/reports-layout` | Tablero y reportería |
+| `feature/sales-history` | Historial, ticket y anulación |
+| `feature/audit` | Bitácora |
+| `feature/barcode-generator` | EAN-13 y lectura por cámara |
+| `feature/redesign` · `feature/ui-v2` · `feature/branding` · `feature/login-split` | Rediseño de la interfaz |
+| `feature/input-validation` | Validación de tipos en todos los campos |
+| `feature/production-ready` | Separación de semillas y endurecimiento |
+| `feature/pwa-responsive` | Aplicación instalable y adaptación a pantallas |
+| `fix/*` | Correcciones acotadas: conectividad, códigos sembrados, build de Render, desplazamiento de diálogos |
+| `ProductionEnv` | Rama de integración |
+
+`feature/sales` nace de `feature/products` porque el carrito no puede existir sin
+el dominio de productos: ramificar en secuencia refleja esa dependencia real.
+
+Los mensajes de commit llevan cuerpo y explican **por qué** se hizo el cambio y,
+cuando aplica, cómo se verificó — no solo qué líneas se tocaron.
 
 ---
 
@@ -568,9 +651,30 @@ y los errores por campo se pintan en su input correspondiente.
 
 ## Alcance
 
-Conforme a lo solicitado, **no** se implementaron: impresión de tickets, generación de
-documentos, reportes, inventarios, control de caja, métodos de pago ni autenticación de
-usuarios.
+El documento de la prueba pedía una pantalla con administración de productos y
+registro de ventas, y señalaba explícitamente como **no necesarios** los
+tickets, los reportes, el control de caja y la autenticación.
+
+Ese núcleo está completo. Después, con la aprobación del cliente, se añadieron
+varios de esos módulos por considerarse que un punto de venta sin ellos no es
+usable en una tienda real:
+
+| | Estado |
+|---|---|
+| Productos: alta, edición, baja y búsqueda por nombre o código | ✔ Requisito |
+| Venta con edición de precio en línea y total acumulado | ✔ Requisito |
+| Persistencia con relación venta ↔ detalle | ✔ Requisito |
+| Autenticación y roles | ✚ Añadido |
+| Ticket de venta | ✚ Añadido |
+| Reportería y exportación | ✚ Añadido |
+| Tablero | ✚ Añadido |
+| Bitácora de auditoría | ✚ Añadido |
+| Aplicación instalable | ✚ Añadido |
+
+**Sigue sin implementarse**, por quedar fuera de lo acordado: control de caja por
+turnos —los permisos ya están declarados, falta la pantalla—, inventario con
+existencias, y métodos de pago diferenciados. Toda venta se registra como
+cobrada, sin distinguir efectivo de tarjeta.
 
 ---
 
