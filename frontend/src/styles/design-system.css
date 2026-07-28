@@ -41,6 +41,13 @@
   --pos-shadow-xs: 0 1px 2px rgba(24, 33, 44, 0.04);
   --pos-shadow: 0 2px 10px rgba(24, 33, 44, 0.05);
   --pos-shadow-lift: 0 16px 44px rgba(24, 33, 44, 0.14);
+
+  /* Gráficas. El color de serie está validado contra esta superficie con el
+     comprobador de paleta: banda de luminosidad, croma y contraste ≥ 3:1. */
+  --chart-series: #12a150;
+  --chart-series-soft: rgba(18, 161, 80, 0.12);
+  --chart-grid: #edeff1;
+  --chart-axis: #9aa3ae;
 }
 
 .theme--dark.v-application {
@@ -68,6 +75,13 @@
   --pos-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
   --pos-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
   --pos-shadow-lift: 0 18px 48px rgba(0, 0, 0, 0.6);
+
+  /* El verde oscuro no es un simple aclarado del claro: se eligió dentro de la
+     banda de luminosidad del modo oscuro y se validó contra esta superficie. */
+  --chart-series: #25a860;
+  --chart-series-soft: rgba(37, 168, 96, 0.18);
+  --chart-grid: #232a34;
+  --chart-axis: #6e7885;
 }
 
 /* Radios generosos: es lo que más define el carácter minimalista. */
@@ -871,4 +885,204 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* =============================================================================
+   INDICADORES Y GRÁFICAS
+   ============================================================================= */
+
+.stat {
+  background: var(--pos-surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--pos-shadow-xs);
+  padding: 18px 20px;
+}
+.stat__label {
+  font-size: 0.8125rem;
+  font-weight: 550;
+  color: var(--pos-text-muted);
+}
+/* Cifra grande con figuras proporcionales: tabular-nums da a cada dígito el
+   ancho de un cero y a este tamaño el número se ve suelto. */
+.stat__value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--pos-text);
+  line-height: 1.15;
+  margin-top: 6px;
+  font-variant-numeric: normal;
+}
+.stat__foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--pos-text-faint);
+}
+/* La dirección se comunica con icono y signo además del color: el color solo
+   deja fuera a quien no lo distingue. */
+.stat__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 650;
+}
+.stat__delta--up {
+  color: var(--pos-primary);
+}
+.stat__delta--down {
+  color: var(--pos-danger);
+}
+.stat__delta--flat {
+  color: var(--pos-text-faint);
+}
+
+.chart {
+  position: relative;
+}
+.chart__grid-line {
+  stroke: var(--chart-grid);
+  stroke-width: 1;
+}
+.chart__axis-text {
+  fill: var(--chart-axis);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+.chart__bar {
+  fill: var(--chart-series);
+  transition: opacity 0.12s ease;
+}
+.chart__bar--dim {
+  opacity: 0.35;
+}
+.chart__hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* Etiqueta flotante. Se posiciona con transform para no forzar reflujo en cada
+   movimiento del puntero. */
+.chart__tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--pos-text);
+  color: var(--pos-surface);
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: var(--pos-shadow);
+  z-index: 4;
+}
+.chart__tip strong {
+  font-weight: 700;
+}
+
+/* Barras horizontales del ranking. */
+.rank {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+}
+.rank__pos {
+  width: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--pos-text-faint);
+  text-align: right;
+  flex: 0 0 auto;
+}
+.rank__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.rank__name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--pos-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank__track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--pos-surface-2);
+  margin-top: 5px;
+  overflow: hidden;
+}
+.rank__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--chart-series);
+}
+.rank__value {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--pos-text);
+  white-space: nowrap;
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Actividad reciente. */
+.activity {
+  display: flex;
+  gap: 11px;
+  padding: 10px 0;
+}
+.activity__icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.activity__text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.activity__summary {
+  font-size: 0.8125rem;
+  color: var(--pos-text);
+  line-height: 1.45;
+}
+.activity__meta {
+  font-size: 0.6875rem;
+  color: var(--pos-text-faint);
+  margin-top: 2px;
+}
+
+/* Tabla de datos. Existe siempre como alternativa a la gráfica: es el canal
+   accesible cuando el color o la forma no llegan. */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.data-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--pos-text-muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--pos-border);
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--pos-border);
+  color: var(--pos-text);
+}
+.data-table tr:last-child td {
+  border-bottom: 0;
+}
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 }
