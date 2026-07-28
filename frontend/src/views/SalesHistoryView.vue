@@ -51,41 +51,43 @@
       <div class="panel__body scroll">
         <v-skeleton-loader v-if="loading && !ventas.length" type="table-row@6" class="pa-3" />
 
-        <table v-else-if="ventas.length" class="data-table">
-          <thead>
-            <tr>
-              <th>Folio</th>
-              <th>Fecha</th>
-              <th>Cajero</th>
-              <th class="num">Artículos</th>
-              <th class="num">Total</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            <tr
-              v-for="venta in ventas"
-              :key="venta.id"
-              class="fila"
-              :class="{ 'fila--anulada': venta.status === 'cancelled' }"
-              @click="abrirTicket(venta)"
-            >
-              <td>
-                <span class="code">{{ venta.folio }}</span>
-                <span v-if="venta.status === 'cancelled'" class="chip-soft chip-red ml-2">Anulada</span>
-              </td>
-              <td>{{ formatDateTime(venta.soldAt) }}</td>
-              <td>{{ venta.userName || '—' }}</td>
-              <td class="num">{{ venta.itemCount }}</td>
-              <td class="num importe">{{ formatCurrency(venta.total) }}</td>
-              <td class="num">
-                <v-btn icon x-small title="Ver ticket" @click.stop="abrirTicket(venta)">
-                  <v-icon size="17">mdi-receipt-text-outline</v-icon>
-                </v-btn>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else-if="ventas.length" class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th>Fecha</th>
+                <th>Cajero</th>
+                <th class="num">Artículos</th>
+                <th class="num">Total</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="venta in ventas"
+                :key="venta.id"
+                class="fila"
+                :class="{ 'fila--anulada': venta.status === 'cancelled' }"
+                @click="abrirTicket(venta)"
+              >
+                <td>
+                  <span class="code">{{ venta.folio }}</span>
+                  <span v-if="venta.status === 'cancelled'" class="chip-soft chip-red ml-2">Anulada</span>
+                </td>
+                <td>{{ formatDateTime(venta.soldAt) }}</td>
+                <td>{{ venta.userName || '—' }}</td>
+                <td class="num">{{ venta.itemCount }}</td>
+                <td class="num importe">{{ formatCurrency(venta.total) }}</td>
+                <td class="num">
+                  <v-btn icon x-small title="Ver ticket" @click.stop="abrirTicket(venta)">
+                    <v-icon size="17">mdi-receipt-text-outline</v-icon>
+                  </v-btn>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <div v-else class="empty">
           <div class="empty__icon">

@@ -901,12 +901,65 @@
   border-radius: var(--r-md) !important;
 }
 
-/* Áreas táctiles de 44px en tablet. */
-@media (pointer: coarse) {
+/*
+ * Pantallas táctiles.
+ *
+ * El objetivo es 44×44 px, que es la medida por debajo de la cual un dedo falla
+ * de forma medible (WCAG 2.5.5). Se aplica por `pointer: coarse` y no por ancho
+ * de pantalla: lo que importa es cómo se apunta, no cuánto mide el monitor —una
+ * caja registradora con pantalla táctil de 22 pulgadas necesita lo mismo que un
+ * teléfono.
+ */
+@media (pointer: coarse), (max-width: 599px) {
   .qty__btn,
-  .stepper__btn {
-    min-width: 40px;
-    min-height: 40px;
+  .stepper__btn,
+  .nav__item,
+  .nav__action,
+  .preset,
+  .product-card__add,
+  .v-application .v-btn:not(.v-btn--fab):not(.v-btn--icon),
+  .v-application .v-btn--icon {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* El resaltado azul del toque en Android choca con la paleta y se percibe
+     como un parpadeo defectuoso; los estados propios ya dan realimentación. */
+  .nav__item,
+  .preset,
+  .product-card,
+  .list-row {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Safari en iOS amplía la página cuando enfoca un campo de menos de 16px, y
+     luego no la devuelve a su sitio: el cajero acaba desplazando a mano tras
+     cada búsqueda. Con 16px no hay ampliación.
+
+     La condición combina puntero grueso y ancho de pantalla a propósito. Lo
+     correcto conceptualmente es `pointer: coarse` —importa cómo se apunta, no
+     cuánto mide la pantalla—, pero esa condición no es verificable en un
+     navegador de escritorio automatizado, y una regla que no se puede
+     comprobar acaba siendo una regla que no se sabe si funciona. El ancho
+     cubre el caso real del teléfono y se puede medir. */
+  .v-application input:not([type='checkbox']):not([type='radio']),
+  .v-application textarea,
+  .v-application select {
+    font-size: 16px;
+  }
+}
+
+/*
+ * Pantallas con muesca o barra de gestos. Sin esto, en un iPhone instalado como
+ * aplicación, la franja inferior tapa el total y el botón de cobrar.
+ */
+@supports (padding: max(0px)) {
+  .v-application--wrap {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .v-application .v-main__wrap {
+    padding-bottom: env(safe-area-inset-bottom);
   }
 }
 
@@ -1091,6 +1144,23 @@
 
 /* Tabla de datos. Existe siempre como alternativa a la gráfica: es el canal
    accesible cuando el color o la forma no llegan. */
+/*
+ * Contenedor de las tablas.
+ *
+ * Una tabla con varias columnas no cabe en un teléfono, y la salida por defecto
+ * —empujar el ancho de la página— es la peor: se desplaza el documento entero y
+ * la barra lateral y la cabecera se descuadran con él. El desplazamiento tiene
+ * que quedar dentro de la tabla, no en el cuerpo de la página.
+ */
+.table-scroll {
+  overflow-x: auto;
+  /* Sin esto el contenedor se niega a ser más estrecho que su tabla y el
+     desbordamiento se traslada igualmente al padre. */
+  min-width: 0;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -1162,4 +1232,34 @@
 .field-date {
   min-width: 168px;
   max-width: 180px;
+}
+/*
+ * En pantallas estrechas dos campos de fecha con ancho mínimo fijo suman más
+ * que el ancho disponible y empujan la página hacia los lados. Se les permite
+ * encoger y repartirse el espacio: la fecha sigue siendo legible porque el
+ * formato del control nativo es compacto.
+ */
+@media (max-width: 599px) {
+  .field-date {
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 0;
+  }
+  /* Vuetify fija un ancho mínimo en las capas internas del campo; sin
+     neutralizarlas, el contenedor encoge pero el `input` sigue empujando y el
+     desbordamiento se traslada a la página. */
+  .field-date .v-input__control,
+  .field-date .v-input__slot,
+  .field-date .v-text-field__slot,
+  .field-date input {
+    min-width: 0;
+  }
+
+  /* Los selectores y buscadores de las barras de filtros tampoco deben
+     imponer un mínimo que la pantalla no tiene. */
+  .filters__select,
+  .filters__search {
+    min-width: 0;
+    max-width: none;
+  }
 }
