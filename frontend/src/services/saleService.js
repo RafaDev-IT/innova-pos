@@ -24,8 +24,22 @@ export default {
     return response.data;
   },
 
-  async list({ limit = 20, offset = 0 } = {}) {
-    const response = await http.get('/sales', { params: { limit, offset } });
+  async list({ limit = 20, offset = 0, folio = null, from = null, to = null, userId = null, status = null } = {}) {
+    const params = { limit, offset };
+    // Solo se envían los filtros con valor: un parámetro vacío haría que el
+    // validador del servidor lo rechace por formato.
+    if (folio) params.folio = folio;
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (userId) params.userId = userId;
+    if (status) params.status = status;
+
+    const response = await http.get('/sales', { params });
     return { items: response.data, pagination: response.meta };
+  },
+
+  async cancel(id, reason) {
+    const response = await http.post(`/sales/${id}/cancel`, { reason });
+    return response.data;
   },
 };
