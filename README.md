@@ -13,6 +13,8 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 - [Interfaz](#interfaz)
 - [Stack](#stack)
 - [Puesta en marcha](#puesta-en-marcha)
+- [Datos iniciales](#datos-iniciales)
+- [Despliegue](#despliegue)
 - [Modelo de datos](#modelo-de-datos)
 - [API](#api)
 - [Pruebas](#pruebas)
@@ -74,22 +76,58 @@ modo oscuro. El detalle de las decisiones está en **[`docs/DESIGN.md`](docs/DES
 
 ## Puesta en marcha
 
-### Requisitos
+### Todo con Docker (recomendado)
 
-- Node.js 18 o superior
-- Docker y Docker Compose (para la base de datos)
-
-### Pasos
+Único requisito: **Docker y Docker Compose**. No hace falta Node instalado ni
+conexión a ninguna base remota.
 
 ```bash
-# 1. Base de datos
-docker compose up -d
+docker compose up --build
+```
+
+Levanta los tres servicios, aplica las migraciones y siembra los datos de
+demostración en el primer arranque. Al terminar:
+
+| | |
+|---|---|
+| Aplicación | <http://localhost:8080> |
+| API | <http://localhost:3000/api> |
+| PostgreSQL | `localhost:5432` |
+
+Se sirve ya con catálogo, usuarios e historial: **15 productos, 3 usuarios y 30
+días de ventas simuladas**. Las credenciales aparecen en la propia pantalla de
+acceso; basta pulsar una para entrar.
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `admin` | `Admin.Innova2026` | Administrador |
+| `supervisor` | `Super.Innova2026` | Supervisor |
+| `cajero` | `Cajero.Innova2026` | Cajero |
+
+Los puertos se pueden cambiar si alguno está ocupado:
+
+```bash
+API_PORT=3100 WEB_PORT=8081 docker compose up --build
+```
+
+Reiniciar no duplica nada: las semillas quedan registradas y solo se aplican una
+vez. Para empezar de cero, `docker compose down -v` borra el volumen de datos.
+Con `SEED_DEMO_DATA=false` la base arranca vacía, solo con el administrador.
+
+### Con Node en local (para desarrollar)
+
+Recarga en caliente y ejecución fuera de contenedores. Necesita **Node.js 18 o
+superior**.
+
+```bash
+# 1. Solo la base de datos
+docker compose up -d db
 
 # 2. Backend  (terminal 1)
 cd backend
 cp .env.example .env
 npm install
-npm run db:setup          # crea la base, migra y carga 15 productos de ejemplo
+npm run db:setup          # crea la base, migra y siembra los datos de demostración
 npm run dev               # http://localhost:3000/api
 
 # 3. Frontend (terminal 2)
@@ -118,8 +156,95 @@ psql -d innova_pos -f database/schema.sql
 
 ### Variables de entorno
 
-Documentadas en `backend/.env.example`. Los valores por defecto coinciden con los del
-`docker-compose.yml`, así que normalmente basta con copiarlo tal cual.
+Documentadas en `backend/.env.example` y `frontend/.env.example`. Los valores por
+defecto coinciden con los del `docker-compose.yml`, así que normalmente basta con
+copiarlos tal cual.
+
+---
+
+## Datos iniciales
+
+Hay dos juegos de semillas, y **no son intercambiables**.
+
+### Demostración — `npm run db:seed`
+
+Lo que carga el entorno local: 15 productos, 3 usuarios con contraseñas conocidas
+y 30 días de ventas simuladas con su bitácora. Sirve para evaluar el sistema con
+las pantallas llenas en lugar de vacías.
+
+El historial se genera de forma determinista (misma semilla, mismo resultado) con
+una curva de dos picos, sesgo de fin de semana y distribución desigual entre
+productos, para parecerse a una tienda real y no a números al azar.
+
+Estas semillas **se niegan a ejecutarse con `NODE_ENV=production`**: insertarían
+historial falso que descuadraría los reportes del negocio y crearían cuentas cuya
+contraseña está publicada en este repositorio.
+
+### Producción — `npm run db:seed:prod`
+
+Crea **un solo administrador** y nada más. Sin catálogo, sin ventas, sin bitácora:
+esos datos los genera el negocio.
+
+La contraseña nunca se escribe en el repositorio. Se toma de
+`INITIAL_ADMIN_PASSWORD` o, si no está definida, se genera al azar y se imprime
+una única vez en la consola:
+
+```
+┌───────────────────────────────────────────────────────────┐
+│  ADMINISTRADOR INICIAL CREADO                             │
+├───────────────────────────────────────────────────────────┤
+│  Usuario:     admin                                       │
+│  Contraseña:  JEx75-Gcf89-a4KyS-wG6VY                     │
+│                                                           │
+│  Anótala ahora: no se vuelve a mostrar y no queda         │
+│  guardada en ningún archivo. Cámbiala al entrar.          │
+└───────────────────────────────────────────────────────────┘
+```
+
+Volver a ejecutarlo no crea un segundo administrador ni restablece la contraseña
+del que ya está en uso.
+
+Los atajos de acceso con credenciales que aparecen en el login tampoco se
+compilan en un build de producción: la condición se resuelve al compilar y el
+bundle publicado no contiene ninguna contraseña.
+
+---
+
+## Despliegue
+
+El repositorio trae la configuración para publicar frontend, API y base por
+separado.
+
+| Pieza | Servicio | Configuración |
+|---|---|---|
+| Frontend | Firebase Hosting | `frontend/firebase.json` |
+| API | Render | `render.yaml` |
+| Base de datos | Supabase | `DATABASE_URL` |
+
+**Base de datos.** Copia la cadena del *Session pooler* de Supabase (puerto
+5432) en `DATABASE_URL`. El *Transaction pooler* (6543) no admite sentencias
+preparadas y rompe las migraciones. Cuando esa variable está presente tiene
+prioridad sobre `DB_HOST`/`DB_NAME`/etc. y activa TLS automáticamente.
+
+**API.** El blueprint `render.yaml` aplica las migraciones en el paso de build,
+antes de que la instancia reciba tráfico. Quedan dos variables por completar en
+el panel: `DATABASE_URL` y `CORS_ORIGIN`. El `JWT_SECRET` lo genera Render solo.
+Después, una vez: `npm run db:seed:prod`.
+
+**Frontend.** `VITE_API_BASE_URL` es obligatoria y se resuelve al compilar, no en
+tiempo de ejecución: en un build estático no existe el proxy del servidor de
+desarrollo y el navegador llama a la API directamente.
+
+```bash
+cd frontend
+VITE_API_BASE_URL=https://tu-api.onrender.com/api npm run build
+firebase deploy --only hosting
+```
+
+Firebase publica el mismo sitio en dos dominios (`.web.app` y
+`.firebaseapp.com`), así que `CORS_ORIGIN` admite lista separada por comas y
+deben ir los dos: declarar solo uno deja el otro rechazado por CORS, con un
+error que en el navegador se lee como "la API no responde".
 
 ---
 
@@ -234,8 +359,11 @@ innova-pos/
 |---------|-------------|
 | `npm run dev` | Servidor con recarga automática |
 | `npm start` | Servidor en modo producción |
-| `npm run db:setup` | Crear base + migrar + sembrar |
+| `npm run db:setup` | Crear base + migrar + sembrar datos de demostración |
+| `npm run db:setup:prod` | Migrar + crear solo el administrador inicial |
 | `npm run db:migrate` | Aplicar migraciones pendientes |
+| `npm run db:seed` | Sembrar los datos de demostración |
+| `npm run db:seed:prod` | Crear el administrador inicial (producción) |
 | `npm run db:reset` | Revertir, migrar y sembrar de nuevo |
 | `npm test` | Suite completa |
 | `npm run test:coverage` | Suite con cobertura |

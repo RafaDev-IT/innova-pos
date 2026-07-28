@@ -33,7 +33,18 @@ function resolveJwtSecret() {
 module.exports = {
   env,
   port: Number(process.env.PORT || 3000),
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  /**
+   * Orígenes autorizados a llamar a la API, separados por coma.
+   *
+   * Se admite una lista porque un mismo frontend suele responder en varios
+   * dominios: Firebase Hosting publica cada proyecto a la vez en `.web.app` y
+   * en `.firebaseapp.com`, y declarar solo uno deja el otro rechazado por CORS
+   * con un error que en el navegador se lee como "la API no responde".
+   */
+  corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:5173')
+    .split(',')
+    .map((origen) => origen.trim())
+    .filter(Boolean),
   /**
    * Zona horaria del negocio.
    *

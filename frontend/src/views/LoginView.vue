@@ -84,8 +84,12 @@
           </v-form>
 
           <!-- Credenciales de ejemplo: este proyecto se entrega como prueba
-               técnica y quien lo evalúe necesita poder entrar sin preguntar. -->
-          <div class="login__demo">
+               técnica y quien lo evalúe necesita poder entrar sin preguntar.
+               Nunca se compilan en un build de producción: publicar la
+               contraseña del administrador en la propia pantalla de acceso
+               deja el sistema abierto a cualquiera. Para una demostración
+               desplegada se activan con VITE_SHOW_DEMO_ACCOUNTS=true. -->
+          <div v-if="mostrarCuentasDemo" class="login__demo">
             <div class="login__demo-title">Cuentas de ejemplo</div>
             <button
               v-for="cuenta in cuentasDemo"
@@ -113,6 +117,24 @@ import http from '@/services/http';
 import brandMark from '@/assets/innovab-mark.png';
 import heroImage from '@/assets/login-pos.jpg';
 
+/**
+ * Atajos de acceso para evaluar el sistema sin pedir credenciales.
+ *
+ * La condición se evalúa al compilar: Vite sustituye `import.meta.env.DEV` por
+ * `false` en un build de producción, el ternario se pliega a `[]` y las
+ * contraseñas desaparecen del bundle. Dejarlas en `data()` con un `v-if` en la
+ * plantilla las ocultaría de la pantalla pero seguirían legibles en el
+ * JavaScript servido, que es exactamente lo que hay que evitar.
+ */
+const CUENTAS_DEMO =
+  import.meta.env.DEV || import.meta.env.VITE_SHOW_DEMO_ACCOUNTS === 'true'
+    ? [
+        { label: 'Administrador', username: 'admin', password: 'Admin.Innova2026' },
+        { label: 'Supervisor', username: 'supervisor', password: 'Super.Innova2026' },
+        { label: 'Cajero', username: 'cajero', password: 'Cajero.Innova2026' },
+      ]
+    : [];
+
 export default {
   name: 'LoginView',
 
@@ -125,14 +147,14 @@ export default {
     loading: false,
     generalError: '',
     apiOnline: true,
-    cuentasDemo: [
-      { label: 'Administrador', username: 'admin', password: 'Admin.Innova2026' },
-      { label: 'Supervisor', username: 'supervisor', password: 'Super.Innova2026' },
-      { label: 'Cajero', username: 'cajero', password: 'Cajero.Innova2026' },
-    ],
+    cuentasDemo: CUENTAS_DEMO,
   }),
 
   computed: {
+    mostrarCuentasDemo() {
+      return this.cuentasDemo.length > 0;
+    },
+
     rules() {
       return {
         username: [(v) => !!(v || '').trim() || 'Indica tu usuario'],

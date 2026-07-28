@@ -1,3 +1,11 @@
+# Entorno local completo: base de datos, API y frontend.
+#
+#   docker compose up --build
+#
+# Deja el sistema funcionando en http://localhost:8080 con el catálogo, los
+# usuarios de ejemplo y treinta días de historial ya sembrados. No requiere
+# Node instalado en la máquina ni conexión a ninguna base remota: todo corre en
+# contenedores contra el Postgres de este mismo archivo.
 services:
   db:
     image: postgres:16-alpine
@@ -18,6 +26,58 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  api:
+    build:
+      context: ./backend
+    container_name: innova_pos_api
+    restart: unless-stopped
+    depends_on:
+      db:
+        # `service_healthy`, no `service_started`: el contenedor de Postgres
+        # está "arriba" varios segundos antes de aceptar conexiones, y migrar
+        # en ese hueco falla.
+        condition: service_healthy
+    environment:
+      # Entorno de desarrollo a propósito: este stack sirve para probar el
+      # sistema en local e incluye las semillas de demostración, que se niegan
+      # a ejecutarse con NODE_ENV=production.
+      NODE_ENV: development
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-innova_pos}
+      DB_USER: ${DB_USER:-pos_user}
+      DB_PASSWORD: ${DB_PASSWORD:-pos_password}
+      # Secreto fijo y conocido: es un entorno local con datos ficticios. En un
+      # despliegue real se genera aleatorio y se guarda fuera del repositorio.
+      JWT_SECRET: secreto-local-de-desarrollo-no-usar-en-produccion-innova
+      JWT_EXPIRES_IN: 8h
+      BUSINESS_TIMEZONE: America/El_Salvador
+      CORS_ORIGIN: http://localhost:${WEB_PORT:-8080},http://localhost:5173
+      # A `false` la base arranca vacía, solo con el administrador inicial.
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+    ports:
+      - "${API_PORT:-3000}:3000"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        # El navegador corre en la máquina anfitriona, no dentro de la red de
+        # Docker: la URL tiene que ser la que el anfitrión ve publicada, y por
+        # eso es `localhost` y no el nombre del servicio `api`.
+        VITE_API_BASE_URL: http://localhost:${API_PORT:-3000}/api
+        # Los atajos de acceso con credenciales de ejemplo solo tienen sentido
+        # aquí, donde los datos son ficticios y el objetivo es poder entrar sin
+        # preguntar. En un build de producción no se compilan.
+        VITE_SHOW_DEMO_ACCOUNTS: "true"
+    container_name: innova_pos_web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
 
 volumes:
   pgdata:
