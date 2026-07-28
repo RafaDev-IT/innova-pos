@@ -1,78 +1,108 @@
 <template>
-  <v-main class="pos-login">
-    <div class="pos-login__center">
-      <div class="pos-login__panel">
-      <div class="pos-login__card">
-        <div class="pos-login__logo-plate">
-          <img :src="brandLogo" alt="InnovaB" class="pos-login__logo" />
+  <v-main class="login">
+    <div class="login__split">
+      <!-- Panel visual. Se oculta por completo en pantallas estrechas: en un
+           móvil robaría el espacio que necesita el formulario. -->
+      <aside class="login__visual" aria-hidden="true">
+        <img :src="heroImage" alt="" class="login__photo" />
+        <div class="login__scrim" />
+
+        <div class="login__brand">
+          <div class="brand-plate">
+            <img :src="brandMark" alt="InnovaB" class="brand-plate__img" />
+          </div>
+          <div class="ml-3">
+            <div class="login__brand-name">Innova POS</div>
+            <div class="login__brand-sub">by InnovaB</div>
+          </div>
         </div>
 
-        <h1 class="pos-login__title">Punto de venta</h1>
-        <p class="pos-login__subtitle">Inicia sesión para comenzar tu turno</p>
-
-        <v-form ref="form" v-model="isFormValid" class="mt-6" @submit.prevent="submit">
-          <v-text-field
-            ref="usernameField"
-            v-model="form.username"
-            label="Usuario"
-            outlined
-            dense
-            autofocus
-            autocomplete="username"
-            prepend-inner-icon="mdi-account-outline"
-            :rules="rules.username"
-            :disabled="loading"
-            @input="generalError = ''"
-          />
-
-          <v-text-field
-            v-model="form.password"
-            label="Contraseña"
-            outlined
-            dense
-            autocomplete="current-password"
-            prepend-inner-icon="mdi-lock-outline"
-            :type="showPassword ? 'text' : 'password'"
-            :append-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
-            :rules="rules.password"
-            :disabled="loading"
-            @click:append="showPassword = !showPassword"
-            @input="generalError = ''"
-          />
-
-          <v-alert v-if="generalError" type="error" dense text class="mb-4">
-            {{ generalError }}
-          </v-alert>
-
-          <v-alert v-if="!apiOnline" type="warning" dense text class="mb-4">
-            No hay respuesta de la API. Verifica que el servidor esté ejecutándose.
-          </v-alert>
-
-          <v-btn type="submit" depressed block large class="btn-primary" :loading="loading">
-            Entrar
-          </v-btn>
-        </v-form>
-
-        <!-- Credenciales de ejemplo: este proyecto se entrega como prueba
-             técnica y quien lo evalúe necesita poder entrar sin preguntar. -->
-        <div class="pos-login__demo">
-          <div class="pos-login__demo-title">Cuentas de ejemplo</div>
-          <button
-            v-for="cuenta in cuentasDemo"
-            :key="cuenta.username"
-            type="button"
-            class="pos-login__demo-row"
-            @click="usarCuenta(cuenta)"
-          >
-            <span class="pos-login__demo-role">{{ cuenta.label }}</span>
-            <span class="pos-login__demo-user">{{ cuenta.username }}</span>
-            <v-icon size="14">mdi-arrow-right</v-icon>
-          </button>
+        <div class="login__claim">
+          <p class="login__claim-title">Cobra rápido, cuadra sin sorpresas.</p>
+          <p class="login__claim-text">
+            Catálogo, ventas y corte de caja en una sola pantalla, con el historial de cada movimiento.
+          </p>
         </div>
-      </div>
+      </aside>
 
-        <p class="pos-login__foot">Innova POS · InnovaB</p>
-      </div>
+      <!-- Panel del formulario -->
+      <section class="login__panel">
+        <div class="login__form">
+          <!-- La marca se repite aquí para cuando el panel visual no se muestra. -->
+          <div class="login__brand login__brand--inline d-lg-none">
+            <div class="brand-plate">
+              <img :src="brandMark" alt="InnovaB" class="brand-plate__img" />
+            </div>
+            <div class="ml-3">
+              <div class="brand__name">Innova POS</div>
+              <div class="brand__sub">by InnovaB</div>
+            </div>
+          </div>
+
+          <h1 class="login__title">Inicia sesión</h1>
+          <p class="login__subtitle">Entra con tu usuario para comenzar el turno</p>
+
+          <v-form ref="form" v-model="isFormValid" class="mt-7" @submit.prevent="submit">
+            <v-text-field
+              ref="usernameField"
+              v-model="form.username"
+              label="Usuario"
+              outlined
+              autofocus
+              autocomplete="username"
+              prepend-inner-icon="mdi-account-outline"
+              :rules="rules.username"
+              :disabled="loading"
+              @input="generalError = ''"
+            />
+
+            <v-text-field
+              v-model="form.password"
+              label="Contraseña"
+              outlined
+              autocomplete="current-password"
+              prepend-inner-icon="mdi-lock-outline"
+              :type="showPassword ? 'text' : 'password'"
+              :append-icon="showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+              :rules="rules.password"
+              :disabled="loading"
+              @click:append="showPassword = !showPassword"
+              @input="generalError = ''"
+            />
+
+            <v-alert v-if="generalError" type="error" dense text class="mb-4">
+              {{ generalError }}
+            </v-alert>
+
+            <v-alert v-if="!apiOnline" type="warning" dense text class="mb-4">
+              No hay respuesta de la API. Verifica que el servidor esté ejecutándose.
+            </v-alert>
+
+            <v-btn type="submit" depressed block class="btn-primary btn-tall" :loading="loading">
+              Entrar
+            </v-btn>
+          </v-form>
+
+          <!-- Credenciales de ejemplo: este proyecto se entrega como prueba
+               técnica y quien lo evalúe necesita poder entrar sin preguntar. -->
+          <div class="login__demo">
+            <div class="login__demo-title">Cuentas de ejemplo</div>
+            <button
+              v-for="cuenta in cuentasDemo"
+              :key="cuenta.username"
+              type="button"
+              class="login__demo-row"
+              @click="usarCuenta(cuenta)"
+            >
+              <span class="login__demo-role">{{ cuenta.label }}</span>
+              <span class="login__demo-user">{{ cuenta.username }}</span>
+              <v-icon size="15" color="primary">mdi-arrow-right</v-icon>
+            </button>
+          </div>
+
+          <p class="login__foot">Innova POS · El Salvador</p>
+        </div>
+      </section>
     </div>
   </v-main>
 </template>
@@ -80,13 +110,15 @@
 <script>
 import session from '@/store/session';
 import http from '@/services/http';
-import brandLogo from '@/assets/innovab-logo.png';
+import brandMark from '@/assets/innovab-mark.png';
+import heroImage from '@/assets/login-pos.jpg';
 
 export default {
   name: 'LoginView',
 
   data: () => ({
-    brandLogo,
+    brandMark,
+    heroImage,
     form: { username: '', password: '' },
     isFormValid: false,
     showPassword: false,
@@ -155,110 +187,201 @@ export default {
 </script>
 
 <style scoped>
-.pos-login {
-  background: var(--pos-bg);
+.login {
+  background: var(--pos-surface);
 }
 
-.pos-login__center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.login__split {
+  display: grid;
+  /* 70 % para la fotografía y 30 % para el formulario, con un suelo de 400 px
+     en la columna del formulario: en pantallas de 1280 px un 30 % puro dejaría
+     los campos en 320 px, demasiado estrechos para escribir con comodidad. */
+  grid-template-columns: 7fr minmax(400px, 3fr);
   min-height: 100vh;
 }
 
-.pos-login__panel {
+/* --- Panel visual --------------------------------------------------------- */
+
+.login__visual {
+  position: relative;
+  overflow: hidden;
+  background: var(--pos-canvas);
+}
+
+.login__photo {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  max-width: 400px;
-  padding: 24px;
+  height: 100%;
+  object-fit: cover;
+  /* El sujeto —la mano sobre la terminal— está ligeramente a la izquierda del
+     centro, así que el recorte se ancla ahí y no se pierde al estrecharse. */
+  object-position: 42% center;
 }
 
-.pos-login__card {
-  background: var(--pos-surface);
-  border: 1px solid var(--pos-border);
-  border-radius: var(--pos-r-lg);
-  box-shadow: var(--pos-shadow);
-  padding: 32px 28px 24px;
+/* Velo oscuro solo en la mitad inferior: la fotografía es clara y el texto
+   blanco encima necesita contraste, pero cubrirla entera la apagaría. */
+.login__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 16, 22, 0.34) 0%,
+    rgba(10, 16, 22, 0.12) 32%,
+    rgba(10, 16, 22, 0.58) 72%,
+    rgba(10, 16, 22, 0.82) 100%
+  );
 }
 
-/* El logo está diseñado para fondos blancos: en tema oscuro su trazo gris
-   pizarra desaparecería. Se le da su propia placa clara en lugar de
-   recolorearlo. */
-.pos-login__logo-plate {
-  background: #ffffff;
-  border-radius: var(--pos-r-md);
-  padding: 14px 20px;
-  margin: 0 auto 22px;
-  width: fit-content;
+.login__brand {
+  position: absolute;
+  top: 34px;
+  left: 38px;
+  display: flex;
+  align-items: center;
 }
-.pos-login__logo {
-  display: block;
-  width: 176px;
-  max-width: 100%;
-}
-
-.pos-login__title {
-  font-size: 1.25rem;
-  font-weight: 650;
+.login__brand-name {
+  font-size: 1rem;
+  font-weight: 700;
   letter-spacing: -0.02em;
-  text-align: center;
+  color: #fff;
+  line-height: 1.15;
+}
+.login__brand-sub {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.login__claim {
+  position: absolute;
+  left: 38px;
+  right: 38px;
+  bottom: 40px;
+  max-width: 420px;
+}
+.login__claim-title {
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.28;
+  color: #fff;
+  margin: 0;
+}
+.login__claim-text {
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.82);
+  margin: 10px 0 0;
+}
+
+/* --- Panel del formulario ------------------------------------------------- */
+
+.login__panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  background: var(--pos-surface);
+}
+
+.login__form {
+  width: 100%;
+  max-width: 366px;
+}
+
+.login__brand--inline {
+  position: static;
+  margin-bottom: 26px;
+}
+
+.login__title {
+  font-size: 1.625rem;
+  font-weight: 700;
+  letter-spacing: -0.028em;
   color: var(--pos-text);
   margin: 0;
 }
 
-.pos-login__subtitle {
+.login__subtitle {
   font-size: 0.875rem;
   color: var(--pos-text-faint);
-  text-align: center;
-  margin: 4px 0 0;
+  margin: 6px 0 0;
 }
 
-.pos-login__demo {
-  margin-top: 22px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--pos-border-strong);
+.login__demo {
+  margin-top: 26px;
+  padding-top: 18px;
+  border-top: 1px solid var(--pos-border);
 }
-.pos-login__demo-title {
+.login__demo-title {
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--pos-text-faint);
-  margin-bottom: 8px;
+  margin-bottom: 9px;
 }
-.pos-login__demo-row {
+.login__demo-row {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 7px 10px;
-  border: 1px solid var(--pos-border);
-  border-radius: var(--pos-r-sm);
-  background: var(--pos-surface-sunken);
-  margin-bottom: 6px;
+  padding: 9px 13px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--pos-surface-2);
+  margin-bottom: 7px;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: background 0.14s ease;
 }
-.pos-login__demo-row:hover {
-  border-color: var(--pos-primary);
+.login__demo-row:hover {
   background: var(--pos-primary-soft);
 }
-.pos-login__demo-role {
+.login__demo-role {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--pos-text);
   flex: 1 1 auto;
   text-align: left;
 }
-.pos-login__demo-user {
+.login__demo-user {
   font-family: ui-monospace, Menlo, monospace;
   font-size: 0.75rem;
   color: var(--pos-text-faint);
 }
 
-.pos-login__foot {
+.login__foot {
   text-align: center;
   font-size: 0.75rem;
   color: var(--pos-text-faint);
-  margin: 18px 0 0;
+  margin: 26px 0 0;
+}
+
+/* --- Adaptación ----------------------------------------------------------- */
+
+/* La fotografía cede espacio antes de desaparecer, para que el formulario
+   conserve un ancho cómodo en pantallas intermedias. */
+@media (max-width: 1279px) {
+  .login__claim-title {
+    font-size: 1.25rem;
+  }
+  .login__claim-text {
+    display: none;
+  }
+}
+
+@media (max-width: 959px) {
+  .login__split {
+    grid-template-columns: 1fr;
+  }
+  .login__visual {
+    display: none;
+  }
+  .login__panel {
+    padding: 32px 24px;
+  }
 }
 </style>
