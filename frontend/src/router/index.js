@@ -26,6 +26,18 @@ const routes = [
     meta: { permission: PERMISSIONS.SALES_CREATE, title: 'Punto de venta', icon: 'mdi-point-of-sale' },
   },
   {
+    path: '/tablero',
+    name: 'dashboard',
+    component: () => import('@/views/DashboardView.vue'),
+    meta: { permission: PERMISSIONS.DASHBOARD_VIEW, title: 'Tablero', icon: 'mdi-view-dashboard-outline' },
+  },
+  {
+    path: '/reportes',
+    name: 'reports',
+    component: () => import('@/views/ReportsView.vue'),
+    meta: { permission: PERMISSIONS.REPORTS_VIEW, title: 'Reportes', icon: 'mdi-chart-box-outline' },
+  },
+  {
     path: '/usuarios',
     name: 'users',
     component: () => import('@/views/UsersView.vue'),

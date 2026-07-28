@@ -1,9 +1,21 @@
 const authService = require('../services/authService');
+const audit = require('../services/auditService');
 const asyncHandler = require('../utils/asyncHandler');
 const { ROLE_LABELS } = require('../config/roles');
 
 const login = asyncHandler(async (req, res) => {
   const session = await authService.login(req.body);
+
+  // Solo se registran los accesos correctos. Anotar los intentos fallidos
+  // guardaría contraseñas tecleadas por error en el campo de usuario.
+  await audit.record(req, {
+    action: audit.ACTIONS.LOGIN,
+    entityType: 'user',
+    entityId: session.user.id,
+    summary: `${session.user.name} inició sesión`,
+    user: session.user,
+  });
+
   res.json({ success: true, data: session });
 });
 

@@ -4,6 +4,9 @@ const authRoutes = require('./authRoutes');
 const userRoutes = require('./userRoutes');
 const productRoutes = require('./productRoutes');
 const saleRoutes = require('./saleRoutes');
+const auditRoutes = require('./auditRoutes');
+const dashboardRoutes = require('./dashboardRoutes');
+const reportRoutes = require('./reportRoutes');
 
 const router = Router();
 
@@ -26,5 +29,8 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/products', productRoutes);
 router.use('/sales', saleRoutes);
+router.use('/audit', auditRoutes);
+router.use('/dashboard', dashboardRoutes);
+router.use('/reports', reportRoutes);
 
 module.exports = router;
