@@ -1,0 +1,10 @@
+const path = require('path');
+
+// Le indicamos a sequelize-cli dónde vive cada pieza, porque usamos `src/`
+// en lugar del layout por defecto que genera `sequelize init`.
+module.exports = {
+  config: path.resolve('src', 'config', 'database.js'),
+  'models-path': path.resolve('src', 'models'),
+  'migrations-path': path.resolve('src', 'database', 'migrations'),
+  'seeders-path': path.resolve('src', 'database', 'seeders'),
+};
