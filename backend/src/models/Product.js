@@ -65,6 +65,13 @@ module.exports = (sequelize, DataTypes) => {
     },
   );
 
+  Product.associate = (models) => {
+    Product.hasMany(models.SaleItem, {
+      foreignKey: 'productId',
+      as: 'saleItems',
+    });
+  };
+
   /**
    * Representación pública. El precio sale siempre como string con dos
    * decimales: el driver de Postgres entrega DECIMAL como string para no perder
