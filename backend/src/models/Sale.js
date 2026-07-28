@@ -50,6 +50,22 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(120),
         allowNull: true,
       },
+      cancelledAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      cancelledById: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      cancelledByName: {
+        type: DataTypes.STRING(120),
+        allowNull: true,
+      },
+      cancelReason: {
+        type: DataTypes.STRING(300),
+        allowNull: true,
+      },
     },
     {
       tableName: 'sales',
@@ -63,6 +79,7 @@ module.exports = (sequelize, DataTypes) => {
       onDelete: 'CASCADE',
     });
     Sale.belongsTo(models.User, { foreignKey: 'userId', as: 'user' });
+    Sale.belongsTo(models.User, { foreignKey: 'cancelledById', as: 'cancelledBy' });
   };
 
   Sale.prototype.toJSON = function toJSON() {
@@ -77,6 +94,16 @@ module.exports = (sequelize, DataTypes) => {
       soldAt: values.soldAt,
       userId: values.userId ?? null,
       userName: values.userName ?? null,
+      // Los datos de cancelación solo viajan cuando la venta está cancelada:
+      // cuatro campos nulos en cada venta del histórico son ruido.
+      ...(values.status === 'cancelled'
+        ? {
+            cancelledAt: values.cancelledAt,
+            cancelledById: values.cancelledById ?? null,
+            cancelledByName: values.cancelledByName ?? null,
+            cancelReason: values.cancelReason ?? null,
+          }
+        : {}),
       createdAt: values.createdAt,
       // `items` solo viaja cuando la consulta lo incluye explícitamente.
       ...(values.items ? { items: values.items } : {}),

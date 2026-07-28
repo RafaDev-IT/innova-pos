@@ -77,6 +77,30 @@ describe('POST /api/products', () => {
 
     expect(res.body.error.details[0].field).toBe('barcode');
   });
+
+  it('rechaza un precio con más de dos decimales en lugar de redondearlo', async () => {
+    // Guardar 3.00 cuando el usuario tecleó 2.99999 es decidir por él sobre
+    // dinero, y sin avisar.
+    const res = await apiAs()
+      .post('/api/products')
+      .send({ ...validProduct, price: '2.99999' })
+      .expect(422);
+
+    expect(res.body.error.details.some((d) => d.field === 'price')).toBe(true);
+  });
+
+  it('rechaza tres decimales al editar', async () => {
+    const product = await createProduct();
+
+    await apiAs().put(`/api/products/${product.id}`).send({ price: '1.005' }).expect(422);
+  });
+
+  it('sigue aceptando uno o dos decimales', async () => {
+    await apiAs()
+      .post('/api/products')
+      .send({ ...validProduct, price: '18.5' })
+      .expect(201);
+  });
 });
 
 describe('GET /api/products', () => {

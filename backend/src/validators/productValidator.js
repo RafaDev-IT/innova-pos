@@ -1,5 +1,5 @@
 const { body, param, query } = require('express-validator');
-const { isValidAmount, MAX_AMOUNT } = require('../utils/money');
+const { isValidAmount, hasValidPrecision, MAX_AMOUNT } = require('../utils/money');
 
 const priceRule = (field) =>
   field
@@ -7,6 +7,12 @@ const priceRule = (field) =>
     .custom((value) => {
       if (!isValidAmount(value)) {
         throw new Error(`El precio debe ser un número entre 0 y ${MAX_AMOUNT}`);
+      }
+      // Se rechaza en lugar de redondear: quien teclea 2.99999 y ve guardado
+      // 3.00 no se entera de que el sistema decidió por él, y en un precio esa
+      // diferencia es dinero.
+      if (!hasValidPrecision(value)) {
+        throw new Error('El precio admite como máximo dos decimales');
       }
       return true;
     });

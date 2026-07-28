@@ -61,15 +61,13 @@
           </div>
 
           <div class="line__foot">
-            <v-text-field
+            <AmountField
               :value="item.unitPrice"
               class="price-field"
               outlined
               dense
               hide-details="auto"
-              prefix="$"
-              inputmode="decimal"
-              :title="`Precio unitario en esta venta`"
+              title="Precio unitario en esta venta"
               :error-messages="item.priceError ? [item.priceError] : []"
               @input="updatePrice(index, $event)"
             />
@@ -189,12 +187,15 @@
 
 <script>
 import saleService from '@/services/saleService';
+import AmountField from '@/components/AmountField.vue';
 import { formatCurrency } from '@/utils/format';
 import { fromCents, lineTotalCents, isValidPrice, toCents } from '@/utils/money';
 import { fallbackGradient, initials } from '@/utils/productImage';
 
 export default {
   name: 'SalePanel',
+
+  components: { AmountField },
 
   data: () => ({
     items: [],

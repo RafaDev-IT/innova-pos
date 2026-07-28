@@ -27,8 +27,30 @@ const list = asyncHandler(async (req, res) => {
   const { items, pagination } = await saleService.list({
     limit: req.query.limit,
     offset: req.query.offset,
+    folio: req.query.folio,
+    from: req.query.from,
+    to: req.query.to,
+    userId: req.query.userId,
+    status: req.query.status,
   });
   res.json({ success: true, data: items, meta: pagination });
 });
 
-module.exports = { create, getById, list };
+const cancel = asyncHandler(async (req, res) => {
+  const sale = await saleService.cancel(req.params.id, {
+    reason: req.body.reason,
+    user: req.user,
+  });
+
+  await audit.record(req, {
+    action: audit.ACTIONS.SALE_CANCEL,
+    entityType: 'sale',
+    entityId: sale.id,
+    summary: `Canceló la venta ${sale.folio} por ${sale.total}: ${sale.cancelReason}`,
+    metadata: { folio: sale.folio, total: sale.total, reason: sale.cancelReason },
+  });
+
+  res.json({ success: true, data: sale });
+});
+
+module.exports = { create, getById, list, cancel };

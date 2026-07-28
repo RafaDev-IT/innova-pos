@@ -56,16 +56,13 @@
               </template>
             </v-text-field>
 
-            <v-text-field
+            <AmountField
               v-model="form.price"
               label="Precio"
               placeholder="0.00"
               outlined
               dense
-              prefix="$"
-              inputmode="decimal"
               class="pos-field-price mb-1"
-              :rules="rules.price"
               :error-messages="serverErrors.price"
               @input="clearServerError('price')"
             />
@@ -159,6 +156,7 @@ import productService from '@/services/productService';
 import { toAmountString } from '@/utils/format';
 import { fallbackGradient, initials } from '@/utils/productImage';
 import { generateEan13, isValidEan13 } from '@/utils/barcode';
+import AmountField from '@/components/AmountField.vue';
 import BarcodeImage from '@/components/BarcodeImage.vue';
 import BarcodeScanner from '@/components/BarcodeScanner.vue';
 
@@ -167,7 +165,7 @@ const emptyForm = () => ({ name: '', barcode: '', price: '', description: '', im
 export default {
   name: 'ProductFormDialog',
 
-  components: { BarcodeImage, BarcodeScanner },
+  components: { AmountField, BarcodeImage, BarcodeScanner },
 
   props: {
     value: { type: Boolean, default: false },
@@ -231,11 +229,6 @@ export default {
           (v) => !!(v || '').trim() || 'El código de barras es obligatorio',
           (v) => (v || '').length <= 64 || 'Máximo 64 caracteres',
           (v) => /^[\w.-]+$/.test((v || '').trim()) || 'Solo letras, números, guiones y puntos',
-        ],
-        price: [
-          (v) => (v !== null && v !== undefined && String(v).trim() !== '') || 'El precio es obligatorio',
-          (v) => !Number.isNaN(Number(String(v).replace(',', '.'))) || 'Debe ser un número',
-          (v) => Number(String(v).replace(',', '.')) >= 0 || 'No puede ser negativo',
         ],
         description: [(v) => !v || v.length <= 1000 || 'Máximo 1000 caracteres'],
         imageUrl: [(v) => !v || /^https?:\/\/.+/.test(v) || 'Debe ser una URL completa (https://…)'],

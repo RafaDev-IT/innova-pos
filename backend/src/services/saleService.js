@@ -1,7 +1,8 @@
-const { Op, QueryTypes } = require('sequelize');
+const { Op, QueryTypes, literal } = require('sequelize');
 const { sequelize, Sale, SaleItem, Product } = require('../models');
 const ApiError = require('../utils/ApiError');
 const { toCents, fromCents, MAX_AMOUNT, CENTS_PER_UNIT } = require('../utils/money');
+const config = require('../config');
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -139,11 +140,40 @@ async function findById(id) {
   return sale;
 }
 
-async function list({ limit = DEFAULT_LIMIT, offset = 0 } = {}) {
+/**
+ * Histórico de ventas con filtros.
+ *
+ * El folio se busca por coincidencia parcial porque el operador suele recordar
+ * los últimos dígitos del ticket que tiene en la mano, no el folio completo.
+ */
+async function list({ limit = DEFAULT_LIMIT, offset = 0, folio = null, from = null, to = null, userId = null, status = null } = {}) {
   const safeLimit = Math.min(Math.max(Number(limit) || DEFAULT_LIMIT, 1), MAX_LIMIT);
   const safeOffset = Math.max(Number(offset) || 0, 0);
 
+  const where = {};
+  if (status) where.status = status;
+  if (userId) where.userId = Number(userId);
+
+  if (folio) {
+    const termino = String(folio).trim().replace(/[\\%_]/g, (m) => `\\${m}`);
+    where.folio = { [Op.iLike]: `%${termino}%` };
+  }
+
+  // Las fechas llegan como día local del negocio; se convierten al instante UTC
+  // que les corresponde para no arrastrar el desfase de zona horaria.
+  if (from || to) {
+    const TZ = config.businessTimezone;
+    where.soldAt = {};
+    if (from) {
+      where.soldAt[Op.gte] = literal(`TIMESTAMP '${from} 00:00:00' AT TIME ZONE '${TZ}'`);
+    }
+    if (to) {
+      where.soldAt[Op.lt] = literal(`TIMESTAMP '${to} 00:00:00' AT TIME ZONE '${TZ}' + INTERVAL '1 day'`);
+    }
+  }
+
   const { rows, count } = await Sale.findAndCountAll({
+    where,
     order: [['sold_at', 'DESC']],
     limit: safeLimit,
     offset: safeOffset,
@@ -160,6 +190,46 @@ async function list({ limit = DEFAULT_LIMIT, offset = 0 } = {}) {
   };
 }
 
+/**
+ * Cancela una venta.
+ *
+ * No se borra: se marca. Borrarla dejaría un hueco en la numeración de folios y
+ * haría imposible explicar después por qué falta el V-000512, que es justo lo
+ * que se pregunta en una auditoría.
+ *
+ * Las ventas canceladas quedan fuera de los totales porque todas las consultas
+ * de análisis filtran por estado completado.
+ */
+async function cancel(id, { reason, user }) {
+  const sale = await findById(id);
+
+  if (sale.status === 'cancelled') {
+    throw ApiError.conflict('Esta venta ya estaba cancelada', [
+      { field: 'status', message: `Cancelada el ${sale.cancelledAt.toISOString().slice(0, 10)}` },
+    ]);
+  }
+
+  const motivo = String(reason || '').trim();
+  if (!motivo) {
+    throw ApiError.unprocessable('Indica el motivo de la cancelación', [
+      { field: 'reason', message: 'El motivo es obligatorio' },
+    ]);
+  }
+
+  await sale.update({
+    status: 'cancelled',
+    cancelledAt: new Date(),
+    cancelledById: user ? user.id : null,
+    cancelledByName: user ? user.name : null,
+    cancelReason: motivo,
+  });
+
+  return sale.reload({
+    include: [{ model: SaleItem, as: 'items' }],
+    order: [[{ model: SaleItem, as: 'items' }, 'id', 'ASC']],
+  });
+}
+
 module.exports = {
   DEFAULT_LIMIT,
   MAX_LIMIT,
@@ -167,4 +237,5 @@ module.exports = {
   create,
   findById,
   list,
+  cancel,
 };

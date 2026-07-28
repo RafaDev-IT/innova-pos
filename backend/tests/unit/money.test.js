@@ -89,3 +89,35 @@ describe('suma de importes en centavos', () => {
     expect(fromCents(cents.reduce((a, b) => a + b, 0))).toBe('70.00');
   });
 });
+
+describe('hasValidPrecision', () => {
+  const { hasValidPrecision } = require('../../src/utils/money');
+
+  it('acepta importes de hasta dos decimales', () => {
+    expect(hasValidPrecision('12')).toBe(true);
+    expect(hasValidPrecision('12.5')).toBe(true);
+    expect(hasValidPrecision('12.50')).toBe(true);
+  });
+
+  it('rechaza tres decimales o más', () => {
+    // Redondear en silencio es peor que rechazar: quien teclea 2.99999 y ve
+    // guardado 3.00 no se entera de que el sistema decidió por él.
+    expect(hasValidPrecision('1.005')).toBe(false);
+    expect(hasValidPrecision('2.99999')).toBe(false);
+  });
+
+  it('juzga los números por su valor, no por su texto', () => {
+    expect(hasValidPrecision(12.5)).toBe(true);
+    expect(hasValidPrecision(1.005)).toBe(false);
+  });
+
+  it('admite otra precisión cuando se pide', () => {
+    expect(hasValidPrecision('1.234', 3)).toBe(true);
+    expect(hasValidPrecision('1.2345', 3)).toBe(false);
+  });
+
+  it('no rompe con entradas vacías', () => {
+    expect(hasValidPrecision('')).toBe(true);
+    expect(hasValidPrecision(null)).toBe(true);
+  });
+});
