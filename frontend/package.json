@@ -23,6 +23,7 @@
     "@mdi/font": "^7.4.47",
     "axios": "^1.7.2",
     "vue": "^2.7.16",
+    "vue-router": "^3.6.5",
     "vuetify": "^2.7.2"
   },
   "devDependencies": {
