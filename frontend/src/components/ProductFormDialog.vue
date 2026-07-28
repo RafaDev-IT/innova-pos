@@ -1,55 +1,67 @@
 <template>
-  <v-dialog v-model="isOpen" max-width="560" persistent @keydown.esc="close">
-    <v-card>
-      <v-card-title class="text-h6 primary white--text py-3">
-        <v-icon left dark>{{ isEditing ? 'mdi-pencil' : 'mdi-plus-box' }}</v-icon>
-        {{ isEditing ? 'Editar producto' : 'Nuevo producto' }}
-      </v-card-title>
+  <v-dialog v-model="isOpen" max-width="500" persistent @keydown.esc="close">
+    <div class="v-card pos-dialog">
+      <div class="pos-dialog__head">
+        <div class="pos-dialog__icon pos-dialog__icon--primary">
+          <v-icon size="19" color="primary">{{ isEditing ? 'mdi-pencil-outline' : 'mdi-plus' }}</v-icon>
+        </div>
+        <div>
+          <div class="pos-dialog__title">{{ isEditing ? 'Editar producto' : 'Nuevo producto' }}</div>
+          <div class="pos-dialog__subtitle">
+            {{ isEditing ? 'Los cambios no afectan las ventas ya registradas' : 'Quedará disponible para vender de inmediato' }}
+          </div>
+        </div>
+      </div>
 
-      <v-card-text class="pt-6">
+      <div class="pos-dialog__body">
         <v-form ref="form" v-model="isFormValid" @submit.prevent="submit">
           <v-text-field
             ref="nameField"
             v-model="form.name"
-            label="Nombre *"
+            label="Nombre del producto"
             placeholder="Ej. Coca-Cola 600 ml"
             outlined
             dense
             autofocus
             counter="150"
+            class="mb-1"
             :rules="rules.name"
             :error-messages="serverErrors.name"
             @input="clearServerError('name')"
           />
 
-          <v-text-field
-            v-model="form.barcode"
-            label="Código de barras *"
-            placeholder="Ej. 7501055300013"
-            outlined
-            dense
-            prepend-inner-icon="mdi-barcode"
-            :rules="rules.barcode"
-            :error-messages="serverErrors.barcode"
-            @input="clearServerError('barcode')"
-          />
+          <div class="d-flex" style="gap: 12px">
+            <v-text-field
+              v-model="form.barcode"
+              label="Código de barras"
+              placeholder="7501055300013"
+              outlined
+              dense
+              class="pos-field-barcode mb-1"
+              prepend-inner-icon="mdi-barcode"
+              :rules="rules.barcode"
+              :error-messages="serverErrors.barcode"
+              @input="clearServerError('barcode')"
+            />
 
-          <v-text-field
-            v-model="form.price"
-            label="Precio *"
-            placeholder="0.00"
-            outlined
-            dense
-            prefix="$"
-            inputmode="decimal"
-            :rules="rules.price"
-            :error-messages="serverErrors.price"
-            @input="clearServerError('price')"
-          />
+            <v-text-field
+              v-model="form.price"
+              label="Precio"
+              placeholder="0.00"
+              outlined
+              dense
+              prefix="$"
+              inputmode="decimal"
+              class="pos-field-price mb-1"
+              :rules="rules.price"
+              :error-messages="serverErrors.price"
+              @input="clearServerError('price')"
+            />
+          </div>
 
           <v-textarea
             v-model="form.description"
-            label="Descripción"
+            label="Descripción (opcional)"
             outlined
             dense
             rows="2"
@@ -64,19 +76,17 @@
           <!-- Permite enviar con Enter sin exponer un botón extra. -->
           <button type="submit" class="d-none" />
         </v-form>
-      </v-card-text>
+      </div>
 
-      <v-divider />
-
-      <v-card-actions class="pa-4">
-        <span class="text-caption grey--text">* Campos obligatorios</span>
+      <div class="pos-dialog__foot">
+        <span class="pos-dialog__required">Nombre, código y precio son obligatorios</span>
         <v-spacer />
         <v-btn text :disabled="saving" @click="close">Cancelar</v-btn>
-        <v-btn color="primary" depressed :loading="saving" @click="submit">
+        <v-btn depressed class="pos-btn-primary" :loading="saving" @click="submit">
           {{ isEditing ? 'Guardar cambios' : 'Agregar producto' }}
         </v-btn>
-      </v-card-actions>
-    </v-card>
+      </div>
+    </div>
   </v-dialog>
 </template>
 
@@ -220,3 +230,29 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.pos-dialog__subtitle {
+  font-size: 0.78125rem;
+  color: var(--pos-text-faint);
+  margin-top: 1px;
+  line-height: 1.4;
+}
+
+.pos-dialog__required {
+  font-size: 0.75rem;
+  color: var(--pos-text-faint);
+}
+
+.pos-field-barcode {
+  flex: 1 1 60%;
+}
+.pos-field-price {
+  flex: 1 1 40%;
+  max-width: 150px;
+}
+.pos-field-price input {
+  font-weight: 600;
+  text-align: right;
+}
+</style>

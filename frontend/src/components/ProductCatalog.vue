@@ -1,22 +1,24 @@
 <template>
-  <v-card outlined class="d-flex flex-column fill-height">
-    <v-card-title class="pb-2">
-      <v-icon left color="primary">mdi-package-variant-closed</v-icon>
-      <span class="text-subtitle-1 font-weight-bold">Catálogo de productos</span>
+  <div class="pos-panel">
+    <header class="pos-panel__head">
+      <v-icon size="18" color="primary">mdi-package-variant-closed</v-icon>
+      <span class="pos-panel__title">Catálogo</span>
+      <span v-if="pagination.total" class="pos-count">{{ pagination.total }}</span>
       <v-spacer />
-      <v-btn color="primary" depressed @click="openCreateDialog">
-        <v-icon left>mdi-plus</v-icon>
+      <v-btn depressed class="pos-btn-primary" @click="openCreateDialog">
+        <v-icon left size="18">mdi-plus</v-icon>
         Agregar producto
       </v-btn>
-    </v-card-title>
+    </header>
 
-    <v-card-subtitle class="pb-0">
+    <div class="pos-search-wrap">
       <v-text-field
         ref="searchField"
         v-model="query"
-        label="Buscar por nombre o código de barras"
-        placeholder="Escanea o escribe para buscar…"
-        outlined
+        class="pos-search"
+        placeholder="Escanea un código o escribe el nombre del producto…"
+        solo
+        flat
         dense
         clearable
         hide-details
@@ -26,108 +28,114 @@
         @keydown.enter="handleEnter"
         @click:clear="onQueryChange('')"
       />
-      <div class="text-caption grey--text mt-1 mb-2">
-        <v-icon x-small>mdi-information-outline</v-icon>
-        Con un código de barras exacto, presiona <strong>Enter</strong> para agregarlo directo a la venta.
-      </div>
-    </v-card-subtitle>
+    </div>
 
-    <v-divider />
+    <div class="pos-hint">
+      <v-icon size="13">mdi-barcode-scan</v-icon>
+      Escanea y presiona <kbd class="pos-kbd">Enter</kbd> para agregar directo a la venta
+    </div>
 
-    <div class="catalog-results">
+    <div class="pos-panel__body pos-scroll">
       <v-alert v-if="errorMessage" type="error" dense text class="ma-4">
         {{ errorMessage }}
       </v-alert>
 
-      <v-skeleton-loader v-else-if="loading && !products.length" type="list-item-two-line@4" class="pa-2" />
+      <v-skeleton-loader v-else-if="loading && !products.length" type="list-item-two-line@5" class="pa-2" />
 
-      <v-list v-else-if="products.length" two-line class="py-0">
-        <template v-for="(product, index) in products">
-          <v-list-item :key="product.id" @click="addToSale(product)">
-            <v-list-item-content>
-              <v-list-item-title class="font-weight-medium">{{ product.name }}</v-list-item-title>
-              <v-list-item-subtitle>
-                <v-icon x-small>mdi-barcode</v-icon>
-                {{ product.barcode }}
-                <span v-if="product.description" class="ml-2">· {{ product.description }}</span>
-              </v-list-item-subtitle>
-            </v-list-item-content>
+      <template v-else-if="products.length">
+        <div
+          v-for="product in products"
+          :key="product.id"
+          class="pos-row"
+          role="button"
+          tabindex="0"
+          :title="`Agregar ${product.name} a la venta`"
+          @click="addToSale(product)"
+          @keydown.enter.self="addToSale(product)"
+        >
+          <div class="pos-row__main">
+            <div class="pos-row__name">{{ product.name }}</div>
+            <div class="pos-row__meta">
+              <span class="pos-barcode">{{ product.barcode }}</span>
+              <span v-if="product.description" class="pos-row__desc">· {{ product.description }}</span>
+            </div>
+          </div>
 
-            <v-list-item-action class="flex-row align-center">
-              <span class="text-subtitle-1 font-weight-bold primary--text mr-4">
-                {{ formatCurrency(product.price) }}
-              </span>
+          <div class="pos-row__price">{{ formatCurrency(product.price) }}</div>
 
-              <v-tooltip bottom>
-                <template #activator="{ on, attrs }">
-                  <v-btn icon small v-bind="attrs" v-on="on" @click.stop="openEditDialog(product)">
-                    <v-icon small>mdi-pencil</v-icon>
-                  </v-btn>
-                </template>
-                <span>Editar producto</span>
-              </v-tooltip>
-
-              <v-tooltip bottom>
-                <template #activator="{ on, attrs }">
-                  <v-btn icon small v-bind="attrs" v-on="on" @click.stop="confirmDelete(product)">
-                    <v-icon small>mdi-delete-outline</v-icon>
-                  </v-btn>
-                </template>
-                <span>Dar de baja</span>
-              </v-tooltip>
-
-              <v-tooltip bottom>
-                <template #activator="{ on, attrs }">
-                  <v-btn icon small color="success" v-bind="attrs" v-on="on" @click.stop="addToSale(product)">
-                    <v-icon>mdi-cart-plus</v-icon>
-                  </v-btn>
-                </template>
-                <span>Agregar a la venta</span>
-              </v-tooltip>
-            </v-list-item-action>
-          </v-list-item>
-
-          <v-divider v-if="index < products.length - 1" :key="`d-${product.id}`" />
-        </template>
-      </v-list>
-
-      <div v-else class="text-center grey--text pa-8">
-        <v-icon size="56" color="grey lighten-1">mdi-package-variant-remove</v-icon>
-        <div class="mt-3">
-          {{ query ? `Sin resultados para "${query}"` : 'Aún no hay productos registrados' }}
+          <div class="pos-row__actions">
+            <v-btn icon small title="Editar producto" @click.stop="openEditDialog(product)">
+              <v-icon size="17">mdi-pencil-outline</v-icon>
+            </v-btn>
+            <v-btn icon small title="Dar de baja" @click.stop="confirmDelete(product)">
+              <v-icon size="17">mdi-trash-can-outline</v-icon>
+            </v-btn>
+            <v-btn icon small color="primary" title="Agregar a la venta" @click.stop="addToSale(product)">
+              <v-icon size="20">mdi-plus-circle</v-icon>
+            </v-btn>
+          </div>
         </div>
-        <v-btn v-if="query" text small color="primary" class="mt-2" @click="onQueryChange('')">
+      </template>
+
+      <div v-else class="pos-empty">
+        <div class="pos-empty__icon">
+          <v-icon size="26" color="grey">{{ query ? 'mdi-magnify-close' : 'mdi-package-variant' }}</v-icon>
+        </div>
+        <div class="pos-empty__title">
+          {{ query ? 'Sin coincidencias' : 'El catálogo está vacío' }}
+        </div>
+        <div class="pos-empty__hint">
+          {{
+            query
+              ? `Ningún producto coincide con "${query}". Revisa el texto o registra el producto.`
+              : 'Registra tu primer producto para empezar a vender. Solo necesitas nombre, código de barras y precio.'
+          }}
+        </div>
+        <v-btn v-if="query" text small color="primary" class="mt-3" @click="onQueryChange('')">
           Limpiar búsqueda
+        </v-btn>
+        <v-btn v-else depressed small class="pos-btn-primary mt-3" @click="openCreateDialog">
+          <v-icon left size="16">mdi-plus</v-icon>
+          Agregar producto
         </v-btn>
       </div>
     </div>
 
-    <v-divider v-if="pagination.hasMore" />
-    <div v-if="pagination.hasMore" class="text-center pa-2">
+    <footer v-if="pagination.hasMore" class="pos-panel__foot">
       <v-btn text small color="primary" :loading="loadingMore" @click="loadMore">
-        Cargar más ({{ products.length }} de {{ pagination.total }})
+        Cargar más · {{ products.length }} de {{ pagination.total }}
       </v-btn>
-    </div>
+    </footer>
 
     <ProductFormDialog v-model="dialogOpen" :product="editingProduct" @saved="onProductSaved" />
 
-    <v-dialog v-model="deleteDialog.open" max-width="420">
-      <v-card>
-        <v-card-title class="text-h6">Dar de baja producto</v-card-title>
-        <v-card-text>
-          ¿Confirmas dar de baja <strong>{{ deleteDialog.product && deleteDialog.product.name }}</strong
-          >? Dejará de aparecer en el catálogo, pero se conserva en las ventas ya registradas.
-        </v-card-text>
-        <v-card-actions>
+    <v-dialog v-model="deleteDialog.open" max-width="430">
+      <div class="v-card pos-dialog">
+        <div class="pos-dialog__head">
+          <div class="pos-dialog__icon pos-dialog__icon--danger">
+            <v-icon size="19" color="error">mdi-trash-can-outline</v-icon>
+          </div>
+          <span class="pos-dialog__title">Dar de baja producto</span>
+        </div>
+        <div class="pos-dialog__body">
+          <p class="pos-dialog__text mb-2">
+            <strong>{{ deleteDialog.product && deleteDialog.product.name }}</strong>
+            dejará de aparecer en el catálogo y no podrá agregarse a nuevas ventas.
+          </p>
+          <p class="pos-dialog__note mb-0">
+            Las ventas ya registradas lo conservan intacto, con el precio al que se cobró.
+          </p>
+        </div>
+        <div class="pos-dialog__foot">
           <v-spacer />
           <v-btn text @click="deleteDialog.open = false">Cancelar</v-btn>
           <v-btn color="error" depressed :loading="deleteDialog.saving" @click="performDelete">
             Dar de baja
           </v-btn>
-        </v-card-actions>
-      </v-card>
+        </div>
+      </div>
     </v-dialog>
-  </v-card>
+  </div>
 </template>
 
 <script>
@@ -174,6 +182,12 @@ export default {
 
   methods: {
     formatCurrency,
+
+    /** Devuelve el cursor al buscador (atajo F2). */
+    focusSearch() {
+      const field = this.$refs.searchField;
+      if (field && typeof field.focus === 'function') field.focus();
+    },
 
     /**
      * Espera a que el usuario deje de teclear antes de consultar. Sin esto una
@@ -287,10 +301,40 @@ export default {
 </script>
 
 <style scoped>
-.catalog-results {
-  flex: 1 1 auto;
-  overflow-y: auto;
-  min-height: 240px;
-  max-height: calc(100vh - 300px);
+.pos-search-wrap {
+  padding: 12px 16px 0;
+}
+
+.pos-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--pos-text-faint);
+  background: var(--pos-surface-sunken);
+  border: 1px solid var(--pos-border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.pos-row__desc {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-panel__foot {
+  border-top: 1px solid var(--pos-border);
+  text-align: center;
+  padding: 6px;
+}
+
+.pos-dialog__text {
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--pos-text);
+}
+.pos-dialog__note {
+  font-size: 0.8125rem;
+  color: var(--pos-text-faint);
+  line-height: 1.5;
 }
 </style>

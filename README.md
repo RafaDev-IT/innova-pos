@@ -10,6 +10,7 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 ## Índice
 
 - [Funcionalidades](#funcionalidades)
+- [Interfaz](#interfaz)
 - [Stack](#stack)
 - [Puesta en marcha](#puesta-en-marcha)
 - [Modelo de datos](#modelo-de-datos)
@@ -45,6 +46,17 @@ detalle completo.
 Tres tablas relacionadas: `products`, `sales` y `sale_items`. El detalle guarda una copia
 del producto al momento de venderse, de modo que editar el catálogo después nunca altera
 una venta ya registrada.
+
+---
+
+## Interfaz
+
+![Innova POS](docs/screenshots/pos-claro.jpeg)
+
+Dirección visual **"Terminal de trabajo"**: el total ocupa una losa oscura sin competencia
+visual, el ámbar queda reservado para señalar precios ajustados dentro de la venta, y el
+flujo completo se opera con teclado (`F2` buscar · `Enter` agregar · `F9` guardar). Incluye
+modo oscuro. El detalle de las decisiones está en **[`docs/DESIGN.md`](docs/DESIGN.md)**.
 
 ---
 
@@ -170,7 +182,7 @@ Los importes viajan siempre como string con dos decimales (`"18.50"`), nunca com
 
 ```bash
 cd backend  && npm test     # 67 pruebas — Jest + Supertest sobre PostgreSQL real
-cd frontend && npm test     # 46 pruebas — Vitest + Vue Test Utils
+cd frontend && npm test     # 56 pruebas — Vitest + Vue Test Utils
 ```
 
 Las pruebas del backend corren contra una base PostgreSQL de verdad, no contra un motor
@@ -208,6 +220,7 @@ innova-pos/
 │       └── utils/           aritmética en centavos y formato
 ├── database/schema.sql      esquema completo en SQL plano
 ├── docs/API.md              referencia de la API
+├── docs/DESIGN.md           sistema de diseño y decisiones visuales
 └── docker-compose.yml       PostgreSQL para desarrollo
 ```
 
