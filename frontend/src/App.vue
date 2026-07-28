@@ -85,6 +85,17 @@
       </v-main>
     </template>
 
+    <!-- Resumen de permisos al entrar. Quien inicia sesión sabe su rol pero no
+         necesariamente qué habilita: verlo de una vez evita descubrirlo más
+         tarde con una pantalla que no aparece o un botón que no está. -->
+    <RolePermissionsDialog
+      v-model="bienvenidaAbierta"
+      :rol="rolActual"
+      :todos="roles"
+      :saludo-a="user.name || ''"
+      texto-cierre="Comenzar"
+    />
+
     <v-snackbar v-model="notification.visible" :color="notification.color" :timeout="3600" bottom right>
       <div class="d-flex align-center">
         <v-icon small dark class="mr-2">{{ notificationIcon }}</v-icon>
@@ -100,6 +111,8 @@
 <script>
 import http, { setSessionExpiredHandler } from '@/services/http';
 import session from '@/store/session';
+import authService from '@/services/authService';
+import RolePermissionsDialog from '@/components/RolePermissionsDialog.vue';
 import { THEME_STORAGE_KEY } from '@/plugins/vuetify';
 import brandMark from '@/assets/innovab-mark.png';
 
@@ -108,12 +121,16 @@ const HEALTH_INTERVAL_MS = 15000;
 export default {
   name: 'App',
 
+  components: { RolePermissionsDialog },
+
   data: () => ({
     brandMark,
     drawer: true,
     apiOnline: false,
     healthTimer: null,
     notification: { visible: false, message: '', color: 'success' },
+    roles: [],
+    bienvenidaAbierta: false,
   }),
 
   computed: {
@@ -127,6 +144,20 @@ export default {
 
     roleLabel() {
       return session.state.roleLabel;
+    },
+
+    /** Ficha del rol de quien tiene la sesión abierta. */
+    rolActual() {
+      return this.roles.find((r) => r.value === this.user.role) || null;
+    },
+
+    /**
+     * El store es un objeto observable ajeno al componente, así que hay que
+     * leerlo desde un computed para que Vue registre la dependencia; observar
+     * `session.justLoggedIn` directamente no dispararía nada.
+     */
+    recienInicioSesion() {
+      return session.state.justLoggedIn;
     },
 
     initials() {
@@ -168,6 +199,31 @@ export default {
       return { success: 'mdi-check-circle', error: 'mdi-alert-circle', info: 'mdi-information' }[
         this.notification.color
       ];
+    },
+  },
+
+  watch: {
+    /**
+     * Tras iniciar sesión se muestra una sola vez el resumen del rol. Se
+     * observa la bandera del store en lugar de lanzarlo desde el login porque
+     * el diálogo vive en el armazón: dispararlo antes de navegar lo abriría
+     * sobre una pantalla que está a punto de desmontarse.
+     */
+    recienInicioSesion: {
+      immediate: true,
+      async handler(recienEntro) {
+        if (!recienEntro) return;
+        session.acknowledgeWelcome();
+
+        try {
+          if (!this.roles.length) this.roles = await authService.roles();
+          // Si el rol no viniera en el catálogo, callar es preferible a abrir
+          // un diálogo vacío: entrar al sistema no puede depender de esto.
+          if (this.rolActual) this.bienvenidaAbierta = true;
+        } catch (error) {
+          // Un fallo al describir permisos no debe impedir usar el sistema.
+        }
+      },
     },
   },
 

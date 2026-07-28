@@ -13,6 +13,13 @@ const state = Vue.observable({
   permissions: [],
   roleLabel: '',
   restored: false,
+  /**
+   * Se levanta solo tras un inicio de sesión real, no al restaurar la sesión
+   * guardada. Sirve para mostrar una sola vez el resumen de lo que el rol
+   * permite: si se levantara también al restaurar, el diálogo reaparecería en
+   * cada recarga de página y se volvería un estorbo.
+   */
+  justLoggedIn: false,
 });
 
 const session = {
@@ -48,12 +55,19 @@ const session = {
     state.user = null;
     state.permissions = [];
     state.roleLabel = '';
+    state.justLoggedIn = false;
   },
 
   async login(credentials) {
     const data = await authService.login(credentials);
     this.apply(data);
+    state.justLoggedIn = true;
     return data;
+  },
+
+  /** El resumen de permisos ya se mostró; no volver a abrirlo en esta sesión. */
+  acknowledgeWelcome() {
+    state.justLoggedIn = false;
   },
 
   /**
