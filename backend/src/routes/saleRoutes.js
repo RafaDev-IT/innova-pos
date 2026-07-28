@@ -14,4 +14,7 @@ router.get('/', authorize(PERMISSIONS.SALES_VIEW), rules.listSales, validate, co
 router.get('/:id', authorize(PERMISSIONS.SALES_VIEW), rules.saleId, validate, controller.getById);
 router.post('/', authorize(PERMISSIONS.SALES_CREATE), rules.createSale, validate, controller.create);
 
+// Cancelar exige permiso propio: un cajero registra ventas pero no las anula.
+router.post('/:id/cancel', authorize(PERMISSIONS.SALES_CANCEL), rules.cancelSale, validate, controller.cancel);
+
 module.exports = router;
