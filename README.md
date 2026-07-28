@@ -3,9 +3,50 @@
 Aplicación web de una sola pantalla para administrar productos y registrar ventas.
 Incluye frontend, backend y persistencia en base de datos relacional.
 
-> **Estado del scaffold.** Esta rama (`main`) contiene únicamente la base del proyecto:
-> configuración, infraestructura y utilidades compartidas. Las funcionalidades se
-> desarrollan en ramas por entregable y se integran en `ProductionEnv`.
+> Esta es la rama **`ProductionEnv`**, con los dos entregables integrados.
+
+---
+
+## Índice
+
+- [Funcionalidades](#funcionalidades)
+- [Stack](#stack)
+- [Puesta en marcha](#puesta-en-marcha)
+- [Modelo de datos](#modelo-de-datos)
+- [API](#api)
+- [Pruebas](#pruebas)
+- [Estructura del repositorio](#estructura-del-repositorio)
+- [Comandos disponibles](#comandos-disponibles)
+- [Estrategia de ramas](#estrategia-de-ramas)
+- [Decisiones de diseño](#decisiones-de-diseño)
+
+---
+
+## Funcionalidades
+
+**Administración de productos**
+Alta desde un botón visible en la pantalla principal, mediante un diálogo con validación
+en cliente y servidor. Cada producto tiene nombre, precio y código de barras (obligatorios),
+más descripción y estado. Se pueden editar y dar de baja.
+
+**Búsqueda**
+Un único campo busca simultáneamente por **nombre** y por **código de barras**, sin
+distinguir mayúsculas y con resultados en vivo. La coincidencia exacta de código de barras
+aparece siempre primero, y al presionar Enter se agrega directo a la venta: el flujo natural
+de una pistola lectora.
+
+**Registro de venta**
+Panel con los productos agregados mostrando nombre y precio utilizado. Cada renglón permite
+**quitarlo de la venta**, **editar su precio** dentro de la venta y ajustar la cantidad. El
+**total acumulado** se actualiza en vivo y la venta se guarda en la base de datos con su
+detalle completo.
+
+**Persistencia**
+Tres tablas relacionadas: `products`, `sales` y `sale_items`. El detalle guarda una copia
+del producto al momento de venderse, de modo que editar el catálogo después nunca altera
+una venta ya registrada.
+
+---
 
 ## Stack
 
@@ -14,40 +55,40 @@ Incluye frontend, backend y persistencia en base de datos relacional.
 | Backend | Node.js 18+ · Express 4 · Sequelize 6 |
 | Frontend | Vue.js 2.7 · Vuetify 2.7 · Axios · Vite |
 | Base de datos | PostgreSQL 16 |
-| Calidad | Jest + Supertest · Vitest · ESLint + Prettier · GitHub Actions |
+| Pruebas | Jest + Supertest (backend) · Vitest + Vue Test Utils (frontend) |
+| Calidad | ESLint + Prettier · GitHub Actions |
 
-### Por qué Vite y no Vue CLI
+---
 
-Vue CLI depende de webpack 4, que falla con Node ≥ 17 por el cambio de proveedor
-criptográfico de OpenSSL y obliga a arrancar con `--openssl-legacy-provider`.
-`@vitejs/plugin-vue2` compila exactamente el mismo Vue 2 sin ese problema.
+## Puesta en marcha
 
-## Requisitos
+### Requisitos
 
 - Node.js 18 o superior
 - Docker y Docker Compose (para la base de datos)
-- npm 9 o superior
 
-## Puesta en marcha
+### Pasos
 
 ```bash
 # 1. Base de datos
 docker compose up -d
 
-# 2. Backend
+# 2. Backend  (terminal 1)
 cd backend
 cp .env.example .env
 npm install
-npm run db:setup     # crea la base, aplica migraciones y carga datos de ejemplo
-npm run dev          # http://localhost:3000/api
+npm run db:setup          # crea la base, migra y carga 15 productos de ejemplo
+npm run dev               # http://localhost:3000/api
 
-# 3. Frontend (en otra terminal)
+# 3. Frontend (terminal 2)
 cd frontend
 npm install
-npm run dev          # http://localhost:5173
+npm run dev               # http://localhost:5173
 ```
 
-Verificación rápida de que la API responde:
+Abre <http://localhost:5173>. La barra superior indica si la API responde.
+
+Verificación rápida:
 
 ```bash
 curl http://localhost:3000/api/health
@@ -55,12 +96,93 @@ curl http://localhost:3000/api/health
 
 ### Sin Docker
 
-Si ya tienes PostgreSQL instalado, crea la base y ajusta `backend/.env` con tus
-credenciales. También puedes aplicar el esquema directamente:
+Con PostgreSQL ya instalado, crea la base y ajusta `backend/.env`. Puedes aplicar el
+esquema directamente en lugar de migrar:
 
 ```bash
-psql -U tu_usuario -d innova_pos -f database/schema.sql
+createdb innova_pos
+psql -d innova_pos -f database/schema.sql
 ```
+
+### Variables de entorno
+
+Documentadas en `backend/.env.example`. Los valores por defecto coinciden con los del
+`docker-compose.yml`, así que normalmente basta con copiarlo tal cual.
+
+---
+
+## Modelo de datos
+
+```
+┌─────────────────────┐         ┌─────────────────────┐         ┌─────────────────────┐
+│      products       │         │     sale_items      │         │        sales        │
+├─────────────────────┤         ├─────────────────────┤         ├─────────────────────┤
+│ id            PK    │◄────────│ product_id   FK ∅   │────────►│ id            PK    │
+│ name                │  SET    │ sale_id      FK     │ CASCADE │ folio       UNIQUE  │
+│ barcode      UNIQUE │  NULL   │                     │         │ subtotal  DEC(10,2) │
+│ price      DEC(10,2)│         │ product_name        │         │ total     DEC(10,2) │
+│ description         │         │ product_barcode     │         │ status              │
+│ is_active           │         │ unit_price DEC(10,2)│         │ item_count          │
+│ deleted_at          │         │ quantity            │         │ sold_at             │
+└─────────────────────┘         │ line_total DEC(10,2)│         └─────────────────────┘
+                                └─────────────────────┘
+                                  ▲ copia del producto
+                                    al momento de la venta
+```
+
+**Lo esencial del diseño está en `sale_items`.** Además de referenciar al producto, guarda
+una copia de su nombre, su código de barras y el precio cobrado. Sin esa copia, editar el
+precio de un producto reescribiría el histórico de todas las ventas anteriores. Y como el
+requisito permite editar el precio *dentro de la venta*, `unit_price` tiene que ser un dato
+propio del renglón, no una lectura de la tabla de productos.
+
+De ahí se derivan las reglas de integridad:
+
+- `sale_id` es **CASCADE**: un renglón no tiene sentido sin su venta.
+- `product_id` es **nullable con SET NULL**: si el producto desaparece del catálogo, la
+  venta sigue siendo legible.
+- Los productos se dan de baja de forma **lógica** (`deleted_at`), nunca se eliminan.
+
+---
+
+## API
+
+Referencia completa con ejemplos ejecutables en **[`docs/API.md`](docs/API.md)**.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `GET` | `/api/health` | Estado del servicio |
+| `GET` | `/api/products` | Listar y buscar (`?q=` por nombre o código de barras) |
+| `GET` | `/api/products/:id` | Detalle |
+| `GET` | `/api/products/barcode/:barcode` | Consulta por código de barras exacto |
+| `POST` | `/api/products` | Alta |
+| `PUT` | `/api/products/:id` | Edición |
+| `DELETE` | `/api/products/:id` | Baja lógica |
+| `POST` | `/api/sales` | Registrar venta con su detalle |
+| `GET` | `/api/sales` | Histórico paginado |
+| `GET` | `/api/sales/:id` | Venta con todos sus renglones |
+
+Los importes viajan siempre como string con dos decimales (`"18.50"`), nunca como número.
+
+---
+
+## Pruebas
+
+```bash
+cd backend  && npm test     # 67 pruebas — Jest + Supertest sobre PostgreSQL real
+cd frontend && npm test     # 46 pruebas — Vitest + Vue Test Utils
+```
+
+Las pruebas del backend corren contra una base PostgreSQL de verdad, no contra un motor
+en memoria: solo así se valida el comportamiento real de `DECIMAL`, de las restricciones
+únicas y de las transacciones. La base de test se crea y migra sola.
+
+Entre lo cubierto: cálculo de totales en el servidor, prevalencia del precio editado sobre
+el de catálogo, ausencia de error de punto flotante al sumar cien renglones, folios
+correlativos, reversión completa de la transacción ante un fallo al insertar el detalle, y
+que una venta ya registrada no se altere al cambiar o dar de baja el producto.
+
+---
 
 ## Estructura del repositorio
 
@@ -68,7 +190,7 @@ psql -U tu_usuario -d innova_pos -f database/schema.sql
 innova-pos/
 ├── backend/                 API REST
 │   ├── src/
-│   │   ├── config/          configuración de entorno y de Sequelize
+│   │   ├── config/          entorno y configuración de Sequelize
 │   │   ├── models/          modelos y asociaciones
 │   │   ├── services/        lógica de negocio y transacciones
 │   │   ├── controllers/     adaptadores HTTP
@@ -76,18 +198,20 @@ innova-pos/
 │   │   ├── validators/      reglas de express-validator
 │   │   ├── middlewares/     manejo de errores y validación
 │   │   ├── database/        migraciones y seeders
-│   │   └── utils/           utilidades compartidas (montos, errores)
-│   └── tests/               integración (Supertest) y unitarios
+│   │   └── utils/           importes, errores, helpers
+│   └── tests/               integración y unitarias
 ├── frontend/                SPA Vue 2 + Vuetify
 │   └── src/
-│       ├── components/      componentes de la pantalla
+│       ├── components/      ProductCatalog · ProductFormDialog · SalePanel
 │       ├── services/        cliente Axios y servicios de API
 │       ├── plugins/         inicialización de Vuetify
-│       └── utils/           formato de moneda y fechas
-├── database/                script SQL de creación del esquema
-├── docs/                    documentación de API y decisiones de diseño
+│       └── utils/           aritmética en centavos y formato
+├── database/schema.sql      esquema completo en SQL plano
+├── docs/API.md              referencia de la API
 └── docker-compose.yml       PostgreSQL para desarrollo
 ```
+
+---
 
 ## Comandos disponibles
 
@@ -97,20 +221,23 @@ innova-pos/
 |---------|-------------|
 | `npm run dev` | Servidor con recarga automática |
 | `npm start` | Servidor en modo producción |
-| `npm run db:setup` | Crear base + migrar + sembrar datos |
+| `npm run db:setup` | Crear base + migrar + sembrar |
 | `npm run db:migrate` | Aplicar migraciones pendientes |
-| `npm run db:reset` | Revertir todo, migrar y sembrar de nuevo |
-| `npm test` | Suite de integración contra PostgreSQL |
+| `npm run db:reset` | Revertir, migrar y sembrar de nuevo |
+| `npm test` | Suite completa |
+| `npm run test:coverage` | Suite con cobertura |
 | `npm run lint` | ESLint |
 
 **Frontend** (`cd frontend`)
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm run dev` | Servidor de desarrollo (Vite) |
+| `npm run dev` | Servidor de desarrollo |
 | `npm run build` | Build de producción en `dist/` |
-| `npm test` | Tests de componentes (Vitest) |
+| `npm test` | Pruebas de componentes |
 | `npm run lint` | ESLint |
+
+---
 
 ## Estrategia de ramas
 
@@ -121,12 +248,56 @@ innova-pos/
 | `feature/sales` | **Entregable 2** — registro y persistencia de ventas |
 | `ProductionEnv` | Versión final con ambos entregables integrados |
 
-Los entregables se integran en `ProductionEnv` con merges `--no-ff`, de modo que
-la separación entre ellos queda visible en el historial:
+`feature/sales` nace de `feature/products` porque el carrito no puede existir sin el
+dominio de productos: ramificar en secuencia refleja esa dependencia real. Ambos se
+integran en `ProductionEnv` con merges `--no-ff` separados, de modo que la frontera entre
+entregables queda visible en el historial:
 
 ```bash
 git log --graph --oneline --all
 ```
+
+---
+
+## Decisiones de diseño
+
+**Importes en `DECIMAL`, aritmética en centavos.**
+El punto flotante binario no representa exactamente valores como 19.99 y acumula error al
+sumar. Los precios se almacenan como `DECIMAL(10,2)`, viajan por la API como string y se
+suman en centavos enteros, tanto en el servidor como en el navegador. El total que el
+cajero ve en pantalla coincide dígito a dígito con el que se persiste.
+
+**Los totales se calculan en el servidor.**
+Del cliente solo se acepta qué producto, a qué precio se cobró y cuántas unidades. Un total
+enviado desde el navegador nunca se guarda.
+
+**Registro transaccional.**
+La venta y su detalle se insertan en una única transacción: si falla cualquier renglón, la
+cabecera tampoco queda guardada. Una venta a medias es peor que ninguna venta.
+
+**Folio desde una secuencia de PostgreSQL.**
+Numerar con `COUNT(*)` haría que dos cajas vendiendo a la vez obtuvieran el mismo folio;
+`nextval` es atómico incluso dentro de transacciones.
+
+**Vite en lugar de Vue CLI.**
+Vue CLI depende de webpack 4, que falla con Node ≥ 17 por el cambio de proveedor
+criptográfico de OpenSSL y obligaría a arrancar con `--openssl-legacy-provider`.
+`@vitejs/plugin-vue2` compila exactamente el mismo Vue 2 sin ese problema.
+
+**Errores centralizados.**
+Los servicios lanzan errores de dominio y un único middleware los traduce a HTTP,
+incluyendo los propios de Sequelize. El cliente recibe siempre la misma forma de respuesta
+y los errores por campo se pintan en su input correspondiente.
+
+---
+
+## Alcance
+
+Conforme a lo solicitado, **no** se implementaron: impresión de tickets, generación de
+documentos, reportes, inventarios, control de caja, métodos de pago ni autenticación de
+usuarios.
+
+---
 
 ## Licencia
 
