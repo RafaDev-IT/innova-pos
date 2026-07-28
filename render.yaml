@@ -1,0 +1,38 @@
+# Blueprint de Render para la API.
+#
+# La base de datos no se declara aquí porque vive en Supabase: se conecta con
+# DATABASE_URL, que se define en el panel de Render y nunca en el repositorio.
+#
+# Las migraciones corren dentro del `buildCommand`, antes de que la instancia
+# nueva reciba tráfico. Ejecutarlas después del arranque dejaría una ventana en
+# la que la API responde contra un esquema que todavía no existe.
+services:
+  - type: web
+    name: innova-pos-api
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install && npm run db:migrate
+    startCommand: npm start
+    # El endpoint es público y no toca la base: sirve para que Render sepa que
+    # el proceso está vivo sin consumir una conexión del pool.
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Render inyecta PORT; la aplicación ya lo lee de process.env.
+      - key: JWT_SECRET
+        # `generateValue` crea un secreto aleatorio en el primer despliegue y lo
+        # conserva entre despliegues. Escribirlo aquí lo publicaría en el repo.
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 8h
+      - key: BUSINESS_TIMEZONE
+        value: America/El_Salvador
+      # Se completan en el panel de Render (Environment):
+      #   DATABASE_URL   cadena del "Session pooler" de Supabase (puerto 5432)
+      #   CORS_ORIGIN    dominios de Firebase Hosting, separados por coma
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
