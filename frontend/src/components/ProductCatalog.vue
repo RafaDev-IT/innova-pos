@@ -206,7 +206,7 @@ export default {
       } catch (error) {
         if (currentRequest !== this.requestId) return;
         this.errorMessage = error.message;
-        this.$emit('error', error.message);
+        this.$emit('error', error);
       } finally {
         if (currentRequest === this.requestId) {
           this.loading = false;
@@ -277,7 +277,7 @@ export default {
         this.deleteDialog.open = false;
         this.fetchProducts();
       } catch (error) {
-        this.$emit('error', error.message);
+        this.$emit('error', error);
       } finally {
         this.deleteDialog.saving = false;
       }

@@ -18,7 +18,7 @@
             <ProductCatalog
               @add-to-sale="onAddToSale"
               @notify="notify($event)"
-              @error="notify($event, 'error')"
+              @error="onModuleError($event)"
             />
           </v-col>
 
@@ -27,7 +27,7 @@
             <SalePanel
               ref="salePanel"
               @saved="onSaleSaved"
-              @error="notify($event, 'error')"
+              @error="onModuleError($event)"
             />
           </v-col>
         </v-row>
@@ -48,6 +48,8 @@ import http from '@/services/http';
 import ProductCatalog from '@/components/ProductCatalog.vue';
 import SalePanel from '@/components/SalePanel.vue';
 
+const HEALTH_INTERVAL_MS = 15000;
+
 export default {
   name: 'App',
 
@@ -55,6 +57,7 @@ export default {
 
   data: () => ({
     apiOnline: false,
+    healthTimer: null,
     notification: {
       visible: false,
       message: '',
@@ -63,17 +66,43 @@ export default {
   }),
 
   created() {
-    this.checkApiHealth();
+    this.checkApiHealth({ silent: true });
+    // El indicador se revalida periódicamente: comprobarlo solo al arrancar
+    // haría que siguiera anunciando "API conectada" después de que la API
+    // cayera, afirmando un estado que no se verificó.
+    this.healthTimer = setInterval(() => this.checkApiHealth({ silent: true }), HEALTH_INTERVAL_MS);
+  },
+
+  beforeDestroy() {
+    clearInterval(this.healthTimer);
   },
 
   methods: {
-    async checkApiHealth() {
+    async checkApiHealth({ silent = false } = {}) {
+      const estabaEnLinea = this.apiOnline;
       try {
         await http.get('/health');
         this.apiOnline = true;
+        // Solo se avisa de la recuperación, no de cada sondeo correcto.
+        if (!estabaEnLinea && !silent) this.notify('Conexión con la API restablecida');
       } catch (error) {
         this.apiOnline = false;
-        this.notify(error.message, 'error');
+        if (!silent) this.notify(error.message, 'error');
+      }
+    },
+
+    /**
+     * Un módulo reportó un fallo. Si fue de conexión se revalida el estado de
+     * la API de inmediato, sin esperar al siguiente sondeo.
+     */
+    onModuleError(error) {
+      const message = typeof error === 'string' ? error : error.message;
+      this.notify(message, 'error');
+
+      const esDeConexion = typeof error === 'object' && error !== null && error.offline;
+      if (esDeConexion || /no se pudo conectar/i.test(message)) {
+        this.apiOnline = false;
+        this.checkApiHealth({ silent: true });
       }
     },
 
